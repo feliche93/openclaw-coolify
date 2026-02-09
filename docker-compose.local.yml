@@ -8,7 +8,8 @@ services:
       - OPENCODE_API_KEY=${OPENCODE_API_KEY}
       - OPENCLAW_PRIMARY_MODEL=opencode/kimi-k2.5
       # Auth
-      - AUTH_PASSWORD=secret2
+      - AUTH_USERNAME=whatever
+      - AUTH_PASSWORD=secret
       - OPENCLAW_GATEWAY_TOKEN=local-dev-token
       # Browser sidecar
       - BROWSER_CDP_URL=http://browser:9223

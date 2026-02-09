@@ -9,6 +9,7 @@ services:
       - OPENCODE_API_KEY=${OPENCODE_API_KEY}
       - OPENCLAW_PRIMARY_MODEL=opencode/kimi-k2.5
       # Auth
+      - AUTH_USERNAME=whatever
       - AUTH_PASSWORD=changeme
       - OPENCLAW_GATEWAY_TOKEN=my-secret-token
       # Browser sidecar

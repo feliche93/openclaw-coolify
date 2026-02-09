@@ -16,7 +16,7 @@ docker run -d \
 ```
 
 - `ANTHROPIC_API_KEY` — any [supported provider key](#ai-providers-at-least-one-required) works (OpenAI, Gemini, etc.)
-- `AUTH_PASSWORD` — protects the web UI with HTTP basic auth (user: `admin`)
+- `AUTH_PASSWORD` — protects the web UI with HTTP basic auth (user defaults to `admin`, override with `AUTH_USERNAME`)
 - `OPENCLAW_GATEWAY_TOKEN` — internal API token; auto-generated if omitted, but set it explicitly for stable API access
 - `/data` — persists state, config, and workspace across restarts
 
@@ -30,8 +30,8 @@ docker compose up -d
 
 **After starting:**
 
-1. **Openclaw UI** — `http://localhost:8080` (login: `admin` / your `AUTH_PASSWORD`)
-2. **Browser desktop** — `http://localhost:8080/browser/` (login: `admin` / your browser `PASSWORD`) — use this to log into sites that need auth (OAuth, 2FA, captchas). Openclaw reuses the session via CDP.
+1. **Openclaw UI** — `http://localhost:8080` (login: your `AUTH_USERNAME` / `AUTH_PASSWORD`)
+2. **Browser desktop** — `http://localhost:8080/browser/` (login: your `AUTH_USERNAME` / browser `PASSWORD`) — use this to log into sites that need auth (OAuth, 2FA, captchas). Openclaw reuses the session via CDP.
 
 ## Architecture
 
