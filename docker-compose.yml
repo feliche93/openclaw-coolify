@@ -2,7 +2,7 @@ services:
   openclaw:
     image: coollabsio/openclaw:latest
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
+      - "8081:8080"
     environment:
       # Provider (at least one required)
       #- ANTHROPIC_API_KEY=sk-ant-...
@@ -13,7 +13,7 @@ services:
       - AUTH_PASSWORD=changeme
       - OPENCLAW_GATEWAY_TOKEN=my-secret-token
       # Browser sidecar
-      - BROWSER_CDP_URL=http://browser:9223
+      - BROWSER_CDP_URL=http://browser:9222
       - BROWSER_DEFAULT_PROFILE=openclaw
       - BROWSER_EVALUATE_ENABLED=true
       # Hooks (optional)
