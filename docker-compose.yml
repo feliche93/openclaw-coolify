@@ -23,8 +23,8 @@ services:
       # - HOOKS_TOKEN=my-hook-secret
     volumes:
       - openclaw-data:/data
-      # Optional: custom JSON config for complex settings (groups, plugins, etc.)
-      # - ./my-openclaw.json:/app/config/openclaw.json
+      # Custom JSON config for proxy/network tuning (merged with persisted config and env vars)
+      - ./openclaw.custom.json:/app/config/openclaw.json:ro
     depends_on:
       - browser
     restart: unless-stopped
