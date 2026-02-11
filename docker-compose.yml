@@ -40,7 +40,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
-      - CHROME_CLI=--remote-debugging-port=9222
+      - CHROME_CLI=--remote-debugging-address=0.0.0.0 --remote-debugging-port=9222
     volumes:
       - browser-data:/config
     shm_size: 2g
