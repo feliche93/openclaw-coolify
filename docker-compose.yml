@@ -19,7 +19,7 @@ services:
       - OPENCLAW_WORKSPACE_DIR=/data/workspace
       - HOME=/data
       # Browser sidecar
-      - BROWSER_CDP_URL=http://browser:9222
+      - BROWSER_CDP_URL=http://browser:9223
       - BROWSER_DEFAULT_PROFILE=openclaw
       - BROWSER_EVALUATE_ENABLED=true
       # Hooks (optional)
@@ -40,7 +40,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
-      - CHROME_CLI=--remote-debugging-port=9222
+      - CHROME_CLI=--remote-debugging-port=9223
     volumes:
       - browser-data:/config
     shm_size: 2g
