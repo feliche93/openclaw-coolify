@@ -8,7 +8,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Install the Google Workspace MCP server (PyPI: workspace-mcp)
-# Pin to a known-good version that includes OAuth callback + well-known endpoints.
+# Pin for reproducible behavior.
 RUN pip install --no-cache-dir "workspace-mcp==1.4.7"
 
 ENV WORKSPACE_MCP_PORT=8000
@@ -16,6 +16,7 @@ ENV PORT=8000
 
 EXPOSE 8000
 
-# Use a shell form so env vars like TOOL_TIER/TOOLS can expand into args (TOOLS splits on spaces).
-# NOTE: The `workspace-mcp` CLI binds/ports via env (PORT/WORKSPACE_MCP_PORT); it doesn't accept --host/--port flags.
-CMD sh -lc 'workspace-mcp --transport streamable-http ${TOOL_TIER:+--tool-tier "$TOOL_TIER"} ${TOOLS:+--tools $TOOLS}'
+# Add a small shim that exposes OAuth discovery endpoints (not wired into the stock CLI).
+COPY run_server.py /app/run_server.py
+
+CMD ["python3", "/app/run_server.py"]
