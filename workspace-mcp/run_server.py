@@ -109,16 +109,15 @@ def main() -> None:
     async def oauth_client_config(request: Request):
         return await handle_oauth_client_config(request)
 
-    @server.custom_route("/oauth2/authorize", methods=["GET", "OPTIONS"])
-    async def oauth_authorize(request: Request):
-        # NOTE: The upstream handler doesn't set a default redirect_uri, which makes
-        # a bare visit to /oauth2/authorize unusable for Google OAuth.
-        # We set a sane default that supports a browser-based, public "token handoff".
-        origin = request.headers.get("origin")
-        if request.method == "OPTIONS":
-            # Delegate CORS behavior to upstream helper.
-            return await handle_oauth_authorize(request)
+    @server.custom_route("/oauth2/authorize-handoff", methods=["GET"])
+    async def oauth_authorize_handoff(request: Request):
+        """
+        Convenience endpoint for humans: open in a browser, finish Google consent,
+        land on /oauth2callback-handoff which shows the short-lived access token.
 
+        We avoid /oauth2/authorize because FastMCP's RemoteAuthProvider may already
+        register it; route ordering would make overriding unreliable.
+        """
         params = dict(request.query_params)
 
         config = get_oauth_config()
@@ -137,11 +136,9 @@ def main() -> None:
         enabled_tool_scopes = get_current_scopes()
         all_scopes = set(client_scopes) | set(enabled_tool_scopes)
         params["scope"] = " ".join(sorted(all_scopes))
-        logger.info(f"OAuth 2.1 authorization: Requesting scopes: {params['scope']}")
+        logger.info(f"OAuth handoff authorization: Requesting scopes: {params['scope']}")
 
         google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params)
-        # Keep upstream development CORS behavior by reusing its handler for OPTIONS only.
-        # For GET, RedirectResponse is enough.
         return RedirectResponse(url=google_auth_url, status_code=302)
 
     @server.custom_route("/oauth2/token", methods=["POST", "OPTIONS"])
