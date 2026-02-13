@@ -61,10 +61,57 @@ export OPENCLAW_WORKSPACE_DIR="$WORKSPACE_DIR"
 # (symlinks are detected as separate paths).
 export HOME="${STATE_DIR%/.openclaw}"
 
+# ── Pre-clean: avoid invalid config if plugin config exists before install ───
+if [ -n "${CAMOFOX_BROWSER_URL:-}" ] && [ ! -d "$STATE_DIR/extensions/camofox-browser" ] && [ -f "$STATE_DIR/openclaw.json" ]; then
+  echo "[entrypoint] removing stale camofox-browser plugin entry (not installed yet)"
+  node -e "
+    const fs = require('fs');
+    const p = '$STATE_DIR/openclaw.json';
+    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+    if (j.plugins && j.plugins.entries) delete j.plugins.entries['camofox-browser'];
+    if (j.plugins && j.plugins.installs) delete j.plugins.installs['camofox-browser'];
+    fs.writeFileSync(p, JSON.stringify(j, null, 2));
+  " || true
+fi
+
 # ── Configure openclaw from env vars ─────────────────────────────────────────
 echo "[entrypoint] running configure..."
 node /app/scripts/configure.js
 chmod 600 "$STATE_DIR/openclaw.json"
+
+# ── Optional: camofox-browser plugin (Camoufox anti-detection browser) ───────
+# Gate on CAMOFOX_BROWSER_URL so we don't slow down startup unless requested.
+if [ -n "${CAMOFOX_BROWSER_URL:-}" ]; then
+  echo "[entrypoint] camofox-browser requested (CAMOFOX_BROWSER_URL set)"
+  cd /opt/openclaw/app
+
+  if [ ! -d "$STATE_DIR/extensions/camofox-browser" ]; then
+    echo "[entrypoint] installing @askjo/camofox-browser..."
+    openclaw plugins install @askjo/camofox-browser
+  else
+    echo "[entrypoint] camofox-browser already installed"
+  fi
+
+  echo "[entrypoint] enabling camofox-browser..."
+  openclaw plugins enable camofox-browser
+
+  echo "[entrypoint] writing camofox-browser config..."
+  node -e "
+    const fs = require('fs');
+    const p = (process.env.OPENCLAW_STATE_DIR || '$STATE_DIR') + '/openclaw.json';
+    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+    j.plugins = j.plugins || {};
+    j.plugins.entries = j.plugins.entries || {};
+    j.plugins.entries['camofox-browser'] = j.plugins.entries['camofox-browser'] || {};
+    const e = j.plugins.entries['camofox-browser'];
+    e.config = e.config || {};
+    if (process.env.CAMOFOX_BROWSER_URL) e.config.url = process.env.CAMOFOX_BROWSER_URL;
+    if (process.env.CAMOFOX_BROWSER_PORT) e.config.port = parseInt(process.env.CAMOFOX_BROWSER_PORT, 10);
+    if (process.env.CAMOFOX_BROWSER_AUTOSTART !== undefined) e.config.autoStart = process.env.CAMOFOX_BROWSER_AUTOSTART === 'true';
+    fs.writeFileSync(p, JSON.stringify(j, null, 2));
+  "
+  chmod 600 "$STATE_DIR/openclaw.json"
+fi
 
 # ── Auto-fix doctor suggestions (e.g. enable configured channels) ─────────
 echo "[entrypoint] running openclaw doctor --fix..."

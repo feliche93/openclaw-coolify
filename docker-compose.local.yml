@@ -15,10 +15,17 @@ services:
       - BROWSER_CDP_URL=http://browser:9223
       - BROWSER_DEFAULT_PROFILE=openclaw
       - BROWSER_EVALUATE_ENABLED=true
+      # Camofox Browser plugin (optional; requires camofox service below)
+      - CAMOFOX_BROWSER_URL=http://camofox:9377
+      - CAMOFOX_BROWSER_AUTOSTART=false
+      - CAMOFOX_API_KEY=${CAMOFOX_API_KEY}
     volumes:
       - openclaw-data:/data
+      - ./scripts/entrypoint.sh:/app/scripts/entrypoint.sh:ro
+      - ./scripts/configure.js:/app/scripts/configure.js:ro
     depends_on:
       - browser
+      - camofox
     restart: unless-stopped
 
   browser:
@@ -30,6 +37,15 @@ services:
       - CHROME_CLI=--remote-debugging-port=9222
     volumes:
       - browser-data:/config
+    shm_size: 2g
+    restart: unless-stopped
+
+  camofox:
+    build:
+      context: ./camofox-browser
+    environment:
+      - CAMOFOX_PORT=9377
+      - CAMOFOX_API_KEY=${CAMOFOX_API_KEY}
     shm_size: 2g
     restart: unless-stopped
 

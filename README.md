@@ -200,6 +200,20 @@ For sites requiring authentication, use `kasmweb/chrome` so you can log in manua
 
 Mount a persistent volume at the sidecar's profile directory (`/home/kasm-user`) so cookies and sessions survive container restarts. The sidecar may need `CHROME_ARGS=--remote-debugging-port=9222 --remote-debugging-address=0.0.0.0` to expose CDP. Docs: https://docs.openclaw.ai/tools/browser-login
 
+### Camofox Browser (Camoufox anti-detection sidecar + OpenClaw plugin, optional)
+
+Run the `camofox` service in the same `docker-compose.yml` as OpenClaw without publishing its port (internal-only), and configure the `camofox-browser` OpenClaw plugin to talk to it.
+
+When deploying with Coolify, this repo's `docker-compose.yml` uses a Coolify "magic environment variable" (`SERVICE_BASE64_64_CAMOFOX`) to auto-generate a stable secret and wires it into `CAMOFOX_API_KEY` for both containers.
+
+| Variable | Default | Description |
+|---|---|---|
+| `CAMOFOX_BROWSER_URL` | | Camofox server URL (e.g. `http://camofox:9377`). When set, the container entrypoint installs/enables `@askjo/camofox-browser`. |
+| `CAMOFOX_BROWSER_AUTOSTART` | `false` | Set to `false` when the server runs as its own container (plugin must not spawn it). |
+| `CAMOFOX_BROWSER_PORT` | | Server port (used only if `CAMOFOX_BROWSER_URL` is not set). |
+| `CAMOFOX_API_KEY` | | Shared API key required to enable cookie import on the server. Must be set on both `openclaw` and `camofox` services. |
+| `SERVICE_BASE64_64_CAMOFOX` | *(Coolify)* | Coolify-generated secret used by `docker-compose.yml` to populate `CAMOFOX_API_KEY` automatically. |
+
 ### Channels (optional)
 
 | Variable | Default | Description |

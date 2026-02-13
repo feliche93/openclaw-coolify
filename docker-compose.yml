@@ -22,6 +22,13 @@ services:
       - BROWSER_CDP_URL=http://browser:9223
       - BROWSER_DEFAULT_PROFILE=openclaw
       - BROWSER_EVALUATE_ENABLED=true
+      # Camofox Browser plugin (optional; requires camofox service below)
+      # Enables anti-detection browser automation + cookie import tooling.
+      - CAMOFOX_BROWSER_URL=http://camofox:9377
+      - CAMOFOX_BROWSER_AUTOSTART=false
+      # Coolify: generated secret (base64-ish random string). Local: set in your .env if using this compose directly.
+      - SERVICE_BASE64_64_CAMOFOX
+      - CAMOFOX_API_KEY=${SERVICE_BASE64_64_CAMOFOX}
       # Hooks (optional)
       # - HOOKS_ENABLED=true
       # - HOOKS_TOKEN=my-hook-secret
@@ -29,8 +36,12 @@ services:
       - openclaw-data:/data
       # Custom JSON config for proxy/network tuning (merged with persisted config and env vars)
       - ./openclaw.custom.json:/app/config/openclaw.json:ro
+      # Override image scripts so we can add env-var wiring + plugin bootstrapping
+      - ./scripts/entrypoint.sh:/app/scripts/entrypoint.sh:ro
+      - ./scripts/configure.js:/app/scripts/configure.js:ro
     depends_on:
       - browser
+      - camofox
     restart: unless-stopped
 
   # Google Workspace MCP server (multi-account/multi-user capable).
@@ -83,6 +94,17 @@ services:
       - CHROME_CLI=--remote-debugging-address=0.0.0.0 --remote-debugging-port=9222
     volumes:
       - browser-data:/config
+    shm_size: 2g
+    restart: unless-stopped
+
+  camofox:
+    build:
+      context: ./camofox-browser
+    # Internal-only: no ports mapping. OpenClaw reaches it via Docker DNS: http://camofox:9377
+    environment:
+      - CAMOFOX_PORT=9377
+      - SERVICE_BASE64_64_CAMOFOX
+      - CAMOFOX_API_KEY=${SERVICE_BASE64_64_CAMOFOX}
     shm_size: 2g
     restart: unless-stopped
 
