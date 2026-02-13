@@ -172,6 +172,44 @@ if [ -n "$HOOKS_PATH" ]; then
     }"
 fi
 
+# Optional: proxy Workspace MCP through OpenClaw's nginx so the MCP service can
+# remain internal-only (no separate public domain needed).
+#
+# When enabled, URLs look like:
+#   https://<openclaw-domain>/workspace-mcp/mcp
+#   https://<openclaw-domain>/workspace-mcp/oauth2/authorize-handoff
+#
+# Set WORKSPACE_EXTERNAL_URL in the workspace-mcp container to match the proxied
+# base (including path), e.g.:
+#   WORKSPACE_EXTERNAL_URL=https://openclaw.example.com/workspace-mcp
+WORKSPACE_MCP_PROXY_BLOCK=""
+if [ "${WORKSPACE_MCP_PROXY_ENABLED:-false}" = "true" ]; then
+  WORKSPACE_MCP_PROXY_PATH="${WORKSPACE_MCP_PROXY_PATH:-/workspace-mcp/}"
+  case "$WORKSPACE_MCP_PROXY_PATH" in
+    */) : ;;
+    *) WORKSPACE_MCP_PROXY_PATH="${WORKSPACE_MCP_PROXY_PATH}/" ;;
+  esac
+
+  echo "[entrypoint] workspace-mcp proxy enabled at path: ${WORKSPACE_MCP_PROXY_PATH}"
+
+  WORKSPACE_MCP_PROXY_BLOCK="location ${WORKSPACE_MCP_PROXY_PATH} {
+        ${AUTH_BLOCK}
+
+        proxy_pass http://workspace-mcp:8000/;
+
+        proxy_set_header Host \\\$host;
+        proxy_set_header X-Real-IP \\\$remote_addr;
+        proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \\\$scheme;
+
+        proxy_http_version 1.1;
+        proxy_buffering off;
+
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }"
+fi
+
 # ── Write startup page for 502/503/504 while gateway boots ───────────────────
 mkdir -p /usr/share/nginx/html
 cat > /usr/share/nginx/html/starting.html <<'STARTPAGE'
@@ -241,6 +279,7 @@ server {
     }
 
     ${HOOKS_LOCATION_BLOCK}
+    ${WORKSPACE_MCP_PROXY_BLOCK}
 
     location / {
         ${AUTH_BLOCK}
