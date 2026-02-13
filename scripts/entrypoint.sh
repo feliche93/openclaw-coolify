@@ -135,12 +135,14 @@ openclaw doctor --fix 2>&1 || true
 MCPORTER_WORKSPACE_DIR="$WORKSPACE_DIR/config"
 MCPORTER_WORKSPACE_PATH="$MCPORTER_WORKSPACE_DIR/mcporter.json"
 MCPORTER_STATE_PATH="$STATE_DIR/mcporter.json"
+MCPORTER_TEMPLATE_PATH="/app/config/mcporter.json"
+export MCPORTER_TEMPLATE_PATH MCPORTER_WORKSPACE_PATH
 
 mkdir -p "$MCPORTER_WORKSPACE_DIR"
 
 # If neither exists, seed from the baked template.
-if [ ! -f "$MCPORTER_WORKSPACE_PATH" ] && [ ! -f "$MCPORTER_STATE_PATH" ] && [ -f "/app/config/mcporter.json" ]; then
-  cp /app/config/mcporter.json "$MCPORTER_WORKSPACE_PATH"
+if [ ! -f "$MCPORTER_WORKSPACE_PATH" ] && [ ! -f "$MCPORTER_STATE_PATH" ] && [ -f "$MCPORTER_TEMPLATE_PATH" ]; then
+  cp "$MCPORTER_TEMPLATE_PATH" "$MCPORTER_WORKSPACE_PATH"
   chmod 600 "$MCPORTER_WORKSPACE_PATH" || true
   echo "[entrypoint] seeded mcporter config: $MCPORTER_WORKSPACE_PATH"
 fi
@@ -150,6 +152,32 @@ if [ -f "$MCPORTER_STATE_PATH" ] && [ ! -f "$MCPORTER_WORKSPACE_PATH" ]; then
   cp "$MCPORTER_STATE_PATH" "$MCPORTER_WORKSPACE_PATH"
   chmod 600 "$MCPORTER_WORKSPACE_PATH" || true
   echo "[entrypoint] copied mcporter config to workspace: $MCPORTER_WORKSPACE_PATH"
+fi
+
+# If a template exists, merge any missing server entries into the canonical file.
+# This lets us ship new MCP configs in the image without clobbering user edits.
+if [ -f "$MCPORTER_TEMPLATE_PATH" ] && [ -f "$MCPORTER_WORKSPACE_PATH" ]; then
+  node -e "
+    const fs = require('fs');
+    const tmplPath = process.env.MCPORTER_TEMPLATE_PATH;
+    const dstPath = process.env.MCPORTER_WORKSPACE_PATH;
+    const tmpl = JSON.parse(fs.readFileSync(tmplPath, 'utf8'));
+    const dst = JSON.parse(fs.readFileSync(dstPath, 'utf8'));
+    dst.mcpServers = dst.mcpServers || {};
+    const tmplServers = (tmpl && tmpl.mcpServers) || {};
+    let added = 0;
+    for (const [name, cfg] of Object.entries(tmplServers)) {
+      if (!(name in dst.mcpServers)) {
+        dst.mcpServers[name] = cfg;
+        added++;
+      }
+    }
+    if (added > 0) {
+      fs.writeFileSync(dstPath, JSON.stringify(dst, null, 2));
+      console.log('[entrypoint] merged mcporter template entries into canonical config (added=' + added + ')');
+    }
+  " 2>/dev/null || true
+  chmod 600 "$MCPORTER_WORKSPACE_PATH" || true
 fi
 
 # Ensure the state path points at the workspace file.
