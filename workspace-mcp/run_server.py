@@ -4,7 +4,7 @@ import html
 from urllib.parse import urlencode
 
 # Workspace MCP internals (packaged)
-from auth.oauth_config import reload_oauth_config, is_stateless_mode
+from auth.oauth_config import reload_oauth_config
 from core.log_formatter import configure_file_logging
 from core.utils import check_credentials_directory_permissions
 from core.server import server, set_transport_mode, configure_server_for_http
@@ -38,18 +38,12 @@ def _split_services(raw: str) -> list[str]:
 
 
 def main() -> None:
-    # This deployment intentionally runs in "file-based credentials" mode only.
-    # Force OAuth2.1 bearer-token mode off even if someone accidentally sets env vars.
-    os.environ["MCP_ENABLE_OAUTH21"] = "false"
-    os.environ.setdefault("WORKSPACE_MCP_STATELESS_MODE", "false")
-
     # Match upstream behavior: read env after container starts.
     reload_oauth_config()
     configure_file_logging()
 
-    # Credentials dir check (skip in stateless mode)
-    if not is_stateless_mode():
-        check_credentials_directory_permissions()
+    # This deployment is stateful (file-based credentials).
+    check_credentials_directory_permissions()
 
     # Tool selection (env-driven)
     tool_tier = (os.getenv("TOOL_TIER") or "").strip() or None
@@ -169,16 +163,15 @@ def main() -> None:
         # Also persist to the file-based credential store (refreshable) when enabled.
         # This enables "server-side" usage (e.g. OpenClaw calling workspace-mcp internally)
         # without requiring a per-request OAuth browser flow.
-        if not is_stateless_mode():
-            try:
-                cred_store = get_credential_store()
-                ok = cred_store.store_credential(verified_user_id, credentials)
-                if ok:
-                    logger.info(f"Saved Google credentials for {verified_user_id} (file store).")
-                else:
-                    logger.error(f"Failed to save Google credentials for {verified_user_id} (file store).")
-            except Exception as e:
-                logger.error(f"Failed to persist Google credentials for handoff: {e}", exc_info=True)
+        try:
+            cred_store = get_credential_store()
+            ok = cred_store.store_credential(verified_user_id, credentials)
+            if ok:
+                logger.info(f"Saved Google credentials for {verified_user_id} (file store).")
+            else:
+                logger.error(f"Failed to save Google credentials for {verified_user_id} (file store).")
+        except Exception as e:
+            logger.error(f"Failed to persist Google credentials for handoff: {e}", exc_info=True)
 
         user_safe = html.escape(verified_user_id or "")
         proxied_mcp_url = f"{base_url}/mcp"
@@ -224,9 +217,6 @@ def main() -> None:
 
         Use this from OpenClaw to discover which `user_google_email` values are available.
         """
-        if is_stateless_mode():
-            # In stateless mode we avoid filesystem credential storage.
-            return []
         try:
             store = get_credential_store()
             return store.list_users()

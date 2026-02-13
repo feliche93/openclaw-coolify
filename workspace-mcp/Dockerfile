@@ -11,6 +11,11 @@ RUN apt-get update \
 # Pin for reproducible behavior.
 RUN pip install --no-cache-dir "workspace-mcp==1.4.7"
 
+# This deployment is intentionally "file-based credentials mode" only.
+# (No per-request OAuth2.1 bearer tokens.)
+ENV MCP_ENABLE_OAUTH21=false
+ENV WORKSPACE_MCP_STATELESS_MODE=false
+
 ENV WORKSPACE_MCP_PORT=8000
 ENV PORT=8000
 
