@@ -63,6 +63,9 @@ services:
       # Multi-user bearer token auth (OAuth 2.1). Turn off to use legacy auth.
       - MCP_ENABLE_OAUTH21=${MCP_ENABLE_OAUTH21:-true}
       - WORKSPACE_MCP_STATELESS_MODE=${WORKSPACE_MCP_STATELESS_MODE:-false}
+      # Legacy (no bearer token) mode: set USER_GOOGLE_EMAIL to pick the default account
+      # whose credentials were persisted into /data/credentials.
+      - USER_GOOGLE_EMAIL=${USER_GOOGLE_EMAIL:-}
 
       # If you put the MCP behind a reverse proxy (Coolify domain, Tailscale proxy, etc),
       # set this so OAuth endpoints/redirects use the externally reachable URL.
