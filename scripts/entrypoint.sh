@@ -87,15 +87,20 @@ if [ -n "${CAMOFOX_BROWSER_URL:-}" ]; then
 
   if [ ! -d "$STATE_DIR/extensions/camofox-browser" ]; then
     echo "[entrypoint] installing @askjo/camofox-browser..."
-    openclaw plugins install @askjo/camofox-browser
+    # This can be slow on first boot (npm install + postinstall hooks).
+    if command -v timeout >/dev/null 2>&1; then
+      timeout 900s openclaw plugins install @askjo/camofox-browser
+    else
+      openclaw plugins install @askjo/camofox-browser
+    fi
   else
     echo "[entrypoint] camofox-browser already installed"
   fi
 
-  echo "[entrypoint] enabling camofox-browser..."
-  openclaw plugins enable camofox-browser
-
-  echo "[entrypoint] writing camofox-browser config..."
+  # Avoid relying on `openclaw plugins enable`, which can hang in some container
+  # environments even after printing a success message. Enabling is just a JSON
+  # config toggle, so patch it directly.
+  echo "[entrypoint] enabling + configuring camofox-browser..."
   node -e "
     const fs = require('fs');
     const p = (process.env.OPENCLAW_STATE_DIR || '$STATE_DIR') + '/openclaw.json';
@@ -104,6 +109,7 @@ if [ -n "${CAMOFOX_BROWSER_URL:-}" ]; then
     j.plugins.entries = j.plugins.entries || {};
     j.plugins.entries['camofox-browser'] = j.plugins.entries['camofox-browser'] || {};
     const e = j.plugins.entries['camofox-browser'];
+    e.enabled = true;
     e.config = e.config || {};
     if (process.env.CAMOFOX_BROWSER_URL) e.config.url = process.env.CAMOFOX_BROWSER_URL;
     if (process.env.CAMOFOX_BROWSER_PORT) e.config.port = parseInt(process.env.CAMOFOX_BROWSER_PORT, 10);
