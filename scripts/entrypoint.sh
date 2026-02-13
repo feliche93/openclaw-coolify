@@ -124,6 +124,19 @@ echo "[entrypoint] running openclaw doctor --fix..."
 cd /opt/openclaw/app
 openclaw doctor --fix 2>&1 || true
 
+# ── Tool/CLI sanity checks (show up in Coolify logs) ─────────────────────────
+if command -v mcporter >/dev/null 2>&1; then
+  echo "[entrypoint] mcporter available: $(mcporter --version 2>/dev/null || echo 'version-check-failed')"
+else
+  echo "[entrypoint] mcporter missing from PATH"
+fi
+
+if command -v whisper >/dev/null 2>&1; then
+  echo "[entrypoint] whisper available"
+else
+  echo "[entrypoint] whisper missing from PATH"
+fi
+
 # ── Read hooks path from generated config (if hooks enabled) ─────────────────
 HOOKS_PATH=""
 HOOKS_PATH=$(node -e "
