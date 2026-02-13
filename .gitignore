@@ -3,3 +3,5 @@ npm-debug.log*
 .env
 .DS_Store
 my-openclaw.json
+__pycache__/
+*.pyc
