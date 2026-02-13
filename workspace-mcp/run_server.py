@@ -30,6 +30,7 @@ from starlette.responses import HTMLResponse, RedirectResponse
 
 # Reuse upstream callback logic, but present an access-token handoff page.
 from auth.google_auth import handle_auth_callback, check_client_secrets
+from auth.google_auth import get_credential_store
 from auth.oauth21_session_store import get_oauth21_session_store
 from auth.scopes import get_current_scopes
 from auth.oauth_config import get_oauth_config
@@ -208,6 +209,20 @@ def main() -> None:
             )
         except Exception as e:
             logger.error(f"Failed to store OAuth 2.1 session for handoff: {e}", exc_info=True)
+
+        # Also persist to the file-based credential store (refreshable) when enabled.
+        # This enables "server-side" usage (e.g. OpenClaw calling workspace-mcp internally)
+        # without requiring a per-request OAuth browser flow.
+        if not is_stateless_mode():
+            try:
+                cred_store = get_credential_store()
+                ok = cred_store.store_credential(verified_user_id, credentials)
+                if ok:
+                    logger.info(f"Saved Google credentials for {verified_user_id} (file store).")
+                else:
+                    logger.error(f"Failed to save Google credentials for {verified_user_id} (file store).")
+            except Exception as e:
+                logger.error(f"Failed to persist Google credentials for handoff: {e}", exc_info=True)
 
         # Display only the *access token*; do not display refresh_token.
         token = credentials.token or ""
