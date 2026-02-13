@@ -8,6 +8,21 @@ GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT:-18789}"
 echo "[entrypoint] state dir: $STATE_DIR"
 echo "[entrypoint] workspace dir: $WORKSPACE_DIR"
 
+# ── Coolify magic env var aliases (runtime-safe) ─────────────────────────────
+# In Coolify Compose, "magic" SERVICE_* vars are reliably injected into the
+# container env, but Docker Compose var substitution (VAR=${SERVICE_*}) can be
+# brittle. Prefer mapping at runtime so CLIs can depend on stable env names.
+if [ -z "${CAMOFOX_API_KEY:-}" ] && [ -n "${SERVICE_BASE64_64_CAMOFOX:-}" ]; then
+  export CAMOFOX_API_KEY="$SERVICE_BASE64_64_CAMOFOX"
+fi
+
+if [ -z "${GOG_KEYRING_BACKEND:-}" ]; then
+  export GOG_KEYRING_BACKEND="file"
+fi
+if [ -z "${GOG_KEYRING_PASSWORD:-}" ] && [ -n "${SERVICE_PASSWORD_64_GOGKEYRING:-}" ]; then
+  export GOG_KEYRING_PASSWORD="$SERVICE_PASSWORD_64_GOGKEYRING"
+fi
+
 # ── Install extra apt packages (if requested) ────────────────────────────────
 if [ -n "${OPENCLAW_DOCKER_APT_PACKAGES:-}" ]; then
   echo "[entrypoint] installing extra packages: $OPENCLAW_DOCKER_APT_PACKAGES"
