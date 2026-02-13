@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "workspace-mcp": {
+      "description": "Google Workspace MCP (Coolify deployment)",
+      "baseUrl": "https://workspace-mcp.felixvemmer.com/mcp",
+      "auth": "oauth",
+      "oauthRedirectUrl": "http://127.0.0.1:42297/callback"
+    }
+  }
+}
+
