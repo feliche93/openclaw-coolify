@@ -10,6 +10,7 @@ RUN apt-get update \
     ffmpeg \
     python3 \
     python3-pip \
+    python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://bun.sh/install | bash \
@@ -19,7 +20,9 @@ RUN curl -fsSL https://bun.sh/install | bash \
 # Provide the `whisper` CLI for the built-in OpenAI Whisper skill.
 # This is a heavy dependency (pulls torch CPU wheels), but it makes the
 # "Missing: bin:whisper" requirement pass inside the container.
-RUN pip3 install --no-cache-dir --prefer-binary openai-whisper
+RUN python3 -m venv /opt/whisper-venv \
+  && /opt/whisper-venv/bin/pip install --no-cache-dir --prefer-binary openai-whisper \
+  && ln -sf /opt/whisper-venv/bin/whisper /usr/local/bin/whisper
 
 # Coolify deployment cannot reliably bind-mount individual files from the repo
 # into the container. Bake the updated scripts into a derived image instead.
