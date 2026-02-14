@@ -90,7 +90,7 @@ If you deploy this repo in Coolify and want to redeploy only when a newer
 `openclaw/openclaw` release exists, add a Coolify Scheduled Task that runs:
 
 ```bash
-/app/scripts/redeploy-if-new-openclaw-release-infisical.sh
+/app/scripts/redeploy-if-new-openclaw-release.sh
 ```
 
 Required environment variables (recommend storing in Infisical and injecting at runtime):

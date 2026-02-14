@@ -71,9 +71,7 @@ RUN python3 -m venv /opt/whisper-venv \
 COPY scripts/entrypoint.sh /app/scripts/entrypoint.sh
 COPY scripts/configure.js /app/scripts/configure.js
 COPY scripts/redeploy-if-new-openclaw-release.sh /app/scripts/redeploy-if-new-openclaw-release.sh
-COPY scripts/redeploy-if-new-openclaw-release-infisical.sh /app/scripts/redeploy-if-new-openclaw-release-infisical.sh
 COPY config/mcporter.container.json /app/config/mcporter.json
 
 RUN chmod +x /app/scripts/entrypoint.sh \
-  /app/scripts/redeploy-if-new-openclaw-release.sh \
-  /app/scripts/redeploy-if-new-openclaw-release-infisical.sh
+  /app/scripts/redeploy-if-new-openclaw-release.sh
