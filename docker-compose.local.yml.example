@@ -8,9 +8,11 @@ services:
       - OPENCODE_API_KEY=${OPENCODE_API_KEY}
       - OPENCLAW_PRIMARY_MODEL=opencode/kimi-k2.5
       # Auth
-      - AUTH_USERNAME=whatever
-      - AUTH_PASSWORD=secret
-      - OPENCLAW_GATEWAY_TOKEN=local-dev-token
+      # Keep these out of git; prefer setting them in a local `.env` file.
+      # If OPENCLAW_GATEWAY_TOKEN is unset, the entrypoint auto-generates it and persists it.
+      - AUTH_USERNAME=${AUTH_USERNAME:-admin}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-}
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-}
       # Browser sidecar
       - BROWSER_CDP_URL=http://browser:9223
       - BROWSER_DEFAULT_PROFILE=openclaw
@@ -52,3 +54,4 @@ services:
 volumes:
   openclaw-data:
   browser-data:
+

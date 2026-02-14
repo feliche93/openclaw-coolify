@@ -3,5 +3,6 @@ npm-debug.log*
 .env
 .DS_Store
 my-openclaw.json
+docker-compose.local.yml
 __pycache__/
 *.pyc
