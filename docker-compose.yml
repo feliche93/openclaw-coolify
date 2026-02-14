@@ -21,6 +21,7 @@ services:
       - INFISICAL_PATH
       - INFISICAL_CLIENT_ID
       - INFISICAL_CLIENT_SECRET
+      - INFISICAL_API_URL
 
       # Provider (at least one required)
       #- ANTHROPIC_API_KEY=sk-ant-...
@@ -83,6 +84,7 @@ services:
       - INFISICAL_PATH
       - INFISICAL_CLIENT_ID
       - INFISICAL_CLIENT_SECRET
+      - INFISICAL_API_URL
     shm_size: 2g
     restart: unless-stopped
 

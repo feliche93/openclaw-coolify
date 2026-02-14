@@ -131,6 +131,7 @@ If Infisical credentials are set, the container entrypoints re-exec themselves u
 | `INFISICAL_PATH` | `/` | Secrets folder path. |
 | `INFISICAL_CLIENT_ID` | | Universal Auth client ID (machine identity). Used when `INFISICAL_TOKEN` is not set. |
 | `INFISICAL_CLIENT_SECRET` | | Universal Auth client secret (machine identity). Used when `INFISICAL_TOKEN` is not set. |
+| `INFISICAL_API_URL` | | Infisical API base URL (required for self-hosted / non-US). Example: `https://infisical.example.com/api`. |
 
 ### Deepgram (audio transcription, optional)
 

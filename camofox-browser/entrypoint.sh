@@ -4,16 +4,33 @@ set -eu
 # Optional: inject secrets from Infisical (runtime).
 # Re-exec ourselves under `infisical run` so the Node process sees injected env.
 if [ -n "${INFISICAL_PROJECT_ID:-}" ] && [ -z "${INFISICAL_INJECTED:-}" ]; then
+  INFISICAL_API_URL="${INFISICAL_API_URL:-https://app.infisical.com/api}"
   INFISICAL_RUNTIME_TOKEN=""
   if [ -n "${INFISICAL_TOKEN:-}" ]; then
     INFISICAL_RUNTIME_TOKEN="$INFISICAL_TOKEN"
   elif [ -n "${INFISICAL_CLIENT_ID:-}" ] && [ -n "${INFISICAL_CLIENT_SECRET:-}" ]; then
     echo "[camofox-entrypoint] infisical: acquiring access token (universal-auth)"
-    INFISICAL_RUNTIME_TOKEN="$(infisical login \
-      --method=universal-auth \
-      --client-id "$INFISICAL_CLIENT_ID" \
-      --client-secret "$INFISICAL_CLIENT_SECRET" \
-      --plain --silent)"
+    INFISICAL_RUNTIME_TOKEN="$(node -e "
+      const api = process.env.INFISICAL_API_URL || 'https://app.infisical.com/api';
+      const clientId = process.env.INFISICAL_CLIENT_ID;
+      const clientSecret = process.env.INFISICAL_CLIENT_SECRET;
+      if (!clientId || !clientSecret) process.exit(2);
+      fetch(api.replace(/\\/+$/,'') + '/v1/auth/universal-auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ clientId, clientSecret })
+      }).then(async (res) => {
+        const txt = await res.text();
+        let j;
+        try { j = JSON.parse(txt); } catch { throw new Error('non-json response'); }
+        const tok = j && (j.accessToken || j.access_token || (j.data && j.data.accessToken));
+        if (!res.ok || !tok) {
+          console.error('[camofox-entrypoint] infisical: token request failed (status=' + res.status + ')');
+          process.exit(1);
+        }
+        process.stdout.write(tok);
+      }).catch(() => { console.error('[camofox-entrypoint] infisical: token request error'); process.exit(1); });
+    ")"
   fi
 
   if [ -n "$INFISICAL_RUNTIME_TOKEN" ]; then
@@ -22,6 +39,7 @@ if [ -n "${INFISICAL_PROJECT_ID:-}" ] && [ -z "${INFISICAL_INJECTED:-}" ]; then
     INFISICAL_PATH_EFFECTIVE="${INFISICAL_PATH:-/}"
     echo "[camofox-entrypoint] infisical: injecting secrets (env=$INFISICAL_ENV_EFFECTIVE path=$INFISICAL_PATH_EFFECTIVE)"
     exec infisical run \
+      --domain "$INFISICAL_API_URL" \
       --token "$INFISICAL_RUNTIME_TOKEN" \
       --projectId "$INFISICAL_PROJECT_ID" \
       --env "$INFISICAL_ENV_EFFECTIVE" \
