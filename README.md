@@ -121,14 +121,16 @@ If a provider env var is removed, that provider section is cleaned from `opencla
 
 ### Infisical (optional; recommended for Coolify)
 
-If `INFISICAL_TOKEN` and `INFISICAL_PROJECT_ID` are set, the container entrypoints re-exec themselves under `infisical run` and inject secrets at runtime. This lets you keep almost all application secrets out of Coolify env vars.
+If Infisical credentials are set, the container entrypoints re-exec themselves under `infisical run` and inject secrets at runtime. This lets you keep almost all application secrets out of Coolify env vars.
 
 | Variable | Default | Description |
 |---|---|---|
-| `INFISICAL_TOKEN` | | Infisical service token (service token / machine identity token). |
+| `INFISICAL_TOKEN` | | Infisical service token (if your Infisical supports service tokens). |
 | `INFISICAL_PROJECT_ID` | | Infisical project ID. |
 | `INFISICAL_ENV` | `prod` | Infisical environment slug (e.g. `dev`, `staging`, `prod`). |
 | `INFISICAL_PATH` | `/` | Secrets folder path. |
+| `INFISICAL_CLIENT_ID` | | Universal Auth client ID (machine identity). Used when `INFISICAL_TOKEN` is not set. |
+| `INFISICAL_CLIENT_SECRET` | | Universal Auth client secret (machine identity). Used when `INFISICAL_TOKEN` is not set. |
 
 ### Deepgram (audio transcription, optional)
 
