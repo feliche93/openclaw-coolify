@@ -60,6 +60,12 @@ services:
   browser:
     image: coollabsio/openclaw-browser:latest
     # No port exposure needed — proxied via openclaw at /browser/
+    healthcheck:
+      # Chrome DevTools proxy (nginx) is exposed on 9223 in this image.
+      test: ["CMD-SHELL", "curl -fsS \"http://127.0.0.1:9223/json/version\" >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
     environment:
       - PUID=1000
       - PGID=1000
@@ -74,6 +80,11 @@ services:
     build:
       context: ./camofox-browser
     # Internal-only: no ports mapping. OpenClaw reaches it via Docker DNS: http://camofox:9377
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS \"http://127.0.0.1:${CAMOFOX_PORT:-9377}/health\" >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
     environment:
       - CAMOFOX_PORT=9377
       # Infisical (recommended): camofox-browser entrypoint re-execs under
