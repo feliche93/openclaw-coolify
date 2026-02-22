@@ -52,9 +52,10 @@ docker compose up -d
 └─────────────────────────────────────────────┘
 ```
 
-Two-layer Docker build:
+Docker build strategy:
 1. **Base image** (`Dockerfile.base`) — builds openclaw from source. Tagged `coollabsio/openclaw-base:<version>`.
 2. **Final image** (`Dockerfile`) — FROM base, adds nginx + env-to-config scripts. Tagged `coollabsio/openclaw:<version>`.
+3. **Coolify custom image** (`Dockerfile.openclaw-custom`) — self-contained build from upstream OpenClaw source + extra CLIs/tools used by built-in skills.
 
 ## Files
 
@@ -63,7 +64,7 @@ Two-layer Docker build:
 .github/workflows/build.yml         — CI on push/PR (build only, no push)
 Dockerfile.base                     — multi-stage: build openclaw from source → slim runtime
 Dockerfile                          — FROM base, add nginx + config scripts + entrypoint
-Dockerfile.openclaw-custom          — Coolify-oriented derived image with extra CLIs for built-in skills/tools (including global `agent-browser`)
+Dockerfile.openclaw-custom          — self-contained Coolify image (builds OpenClaw from source + adds extra CLIs/tools, including global `agent-browser`)
 scripts/configure.js                — reads env vars, writes/patches openclaw.json
 scripts/entrypoint.sh               — container entrypoint: configure → nginx → gateway
 scripts/smoke.js                    — smoke test (openclaw --version)
@@ -73,9 +74,37 @@ nginx/default.conf                  — reverse proxy :8080 → :18789, optional
 ```
 
 The `openclaw` service in `docker-compose.yml` builds `Dockerfile.openclaw-custom` with:
+- `OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}` (build arg)
 - `AGENT_BROWSER_VERSION=latest` (build arg)
 
 This installs `agent-browser` globally in the container so OpenClaw agents can call it directly.
+
+### Get Latest Faster (Self-Build)
+
+This repo now mirrors upstream OpenClaw's source-build pattern for the custom image, so you can choose your update speed directly:
+
+```bash
+# Latest published OpenClaw release tag (resolved at build time)
+OPENCLAW_GIT_REF=latest-release
+
+# Fastest updates (latest upstream commit on main)
+OPENCLAW_GIT_REF=main
+
+# Reproducible pinned release
+OPENCLAW_GIT_REF=v2026.2.22
+```
+
+Local builds:
+
+```bash
+# Build custom image from current OPENCLAW_GIT_REF (defaults to latest-release)
+./scripts/build.sh custom
+
+# Resolve latest release tag automatically and build custom image
+OPENCLAW_GIT_REF=latest-release ./scripts/build.sh custom
+```
+
+In Coolify, set `OPENCLAW_GIT_REF` as a build env var (`main`, `latest-release`, or pinned `vYYYY.M.D`) and redeploy.
 
 ## auto-update.yml workflow
 

@@ -5,16 +5,31 @@
 #   ./scripts/build.sh                  # build both base + final
 #   ./scripts/build.sh base             # build base only
 #   ./scripts/build.sh final            # build final only (requires base)
+#   ./scripts/build.sh custom           # build self-contained custom image
 #   ./scripts/build.sh browser          # build browser sidecar only
 #   OPENCLAW_GIT_REF=v2026.1.29 ./scripts/build.sh  # pin to a specific version
+#   OPENCLAW_GIT_REF=latest-release ./scripts/build.sh custom
 
 set -euo pipefail
 
-OPENCLAW_GIT_REF="${OPENCLAW_GIT_REF:-main}"
+OPENCLAW_GIT_REF="${OPENCLAW_GIT_REF:-latest-release}"
 BASE_TAG="openclaw-base:local"
 FINAL_TAG="openclaw:local"
+CUSTOM_TAG="openclaw-custom:local"
 BROWSER_TAG="openclaw-browser:local"
+AGENT_BROWSER_VERSION="${AGENT_BROWSER_VERSION:-latest}"
 TARGET="${1:-all}"
+
+resolve_latest_release() {
+  curl -fsSL https://api.github.com/repos/openclaw/openclaw/releases/latest \
+    | node -e 'let s=\"\";process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{const j=JSON.parse(s);const t=String(j.tag_name||\"\").replace(/^v/,\"\");if(!t){process.exit(2);}process.stdout.write(t);});'
+}
+
+if [ "${OPENCLAW_GIT_REF}" = "latest-release" ]; then
+  LATEST_RELEASE="$(resolve_latest_release)"
+  OPENCLAW_GIT_REF="v${LATEST_RELEASE}"
+  echo "==> Resolved latest OpenClaw release: ${OPENCLAW_GIT_REF}"
+fi
 
 build_base() {
   echo "==> Building base image (ref: ${OPENCLAW_GIT_REF})..."
@@ -36,6 +51,17 @@ build_final() {
   echo "==> Final image built: ${FINAL_TAG}"
 }
 
+build_custom() {
+  echo "==> Building custom image from source (ref: ${OPENCLAW_GIT_REF})..."
+  docker build \
+    -f Dockerfile.openclaw-custom \
+    --build-arg "OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF}" \
+    --build-arg "AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION}" \
+    -t "${CUSTOM_TAG}" \
+    .
+  echo "==> Custom image built: ${CUSTOM_TAG}"
+}
+
 build_browser() {
   echo "==> Building browser sidecar image..."
   docker build \
@@ -52,6 +78,9 @@ case "${TARGET}" in
   final)
     build_final
     ;;
+  custom)
+    build_custom
+    ;;
   browser)
     build_browser
     ;;
@@ -61,11 +90,15 @@ case "${TARGET}" in
     build_browser
     ;;
   *)
-    echo "Usage: $0 [base|final|browser|all]"
+    echo "Usage: $0 [base|final|custom|browser|all]"
     exit 1
     ;;
 esac
 
 echo ""
 echo "Done. Run with:"
-echo "  docker run -e OPENCLAW_GATEWAY_TOKEN=\$(openssl rand -hex 32) -e ANTHROPIC_API_KEY=sk-... -e AUTH_PASSWORD=secret -p 8080:8080 ${FINAL_TAG}"
+if [ "${TARGET}" = "custom" ]; then
+  echo "  docker run -e OPENCLAW_GATEWAY_TOKEN=\$(openssl rand -hex 32) -e ANTHROPIC_API_KEY=sk-... -e AUTH_PASSWORD=secret -p 8080:8080 ${CUSTOM_TAG}"
+else
+  echo "  docker run -e OPENCLAW_GATEWAY_TOKEN=\$(openssl rand -hex 32) -e ANTHROPIC_API_KEY=sk-... -e AUTH_PASSWORD=secret -p 8080:8080 ${FINAL_TAG}"
+fi
