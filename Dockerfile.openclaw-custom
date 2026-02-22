@@ -217,6 +217,7 @@ RUN set -eux; \
 
 # Coolify deployment cannot reliably bind-mount individual files from the repo
 # into the container. Bake the updated scripts into a derived image instead.
+COPY openclaw.custom.json /app/config/openclaw.json
 COPY scripts/entrypoint.sh /app/scripts/entrypoint.sh
 COPY scripts/configure.js /app/scripts/configure.js
 COPY scripts/redeploy-if-new-openclaw-release.sh /app/scripts/redeploy-if-new-openclaw-release.sh

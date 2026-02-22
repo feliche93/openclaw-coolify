@@ -1,14 +1,12 @@
-FROM node:20-slim
+FROM node:22-slim
 
-# Pinned Camoufox version for reproducible builds
-# Update these when upgrading Camoufox
-ARG CAMOUFOX_VERSION=135.0.1
-ARG CAMOUFOX_RELEASE=beta.24
 # Infisical CLI (optional; used for runtime secret injection via INFISICAL_TOKEN)
 ARG INFISICAL_VERSION=0.43.48
 # BuildKit sets TARGETARCH (amd64/arm64). Default to amd64 naming.
 ARG TARGETARCH
-ARG CAMOUFOX_URL=
+# npm dist-tag/version for the Camofox server package.
+# Keep as "latest" to track upstream releases automatically.
+ARG CAMOFOX_BROWSER_NPM_TAG=latest
 
 # Install dependencies for Camoufox (Firefox-based)
 RUN apt-get update && apt-get install -y \
@@ -34,8 +32,10 @@ RUN apt-get update && apt-get install -y \
     # Utils
     ca-certificates \
     curl \
+    python3-minimal \
     tar \
     unzip \
+    yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Infisical CLI (for optional runtime env injection)
@@ -54,36 +54,23 @@ RUN set -eux; \
     rm -f /tmp/infisical.tgz /tmp/infisical; \
     infisical --version
 
-# Pre-bake Camoufox browser binary into image
-# This avoids downloading at runtime and pins the version
-# Note: unzip returns exit code 1 for warnings (Unicode filenames), so we use || true and verify
-RUN mkdir -p /root/.cache/camoufox \
-    && ARCH="x86_64" \
-    && [ "${TARGETARCH:-}" = "arm64" ] && ARCH="arm64" || true \
-    && URL="${CAMOFOX_URL:-}" \
-    && [ -z "$URL" ] && URL="https://github.com/daijro/camoufox/releases/download/v${CAMOUFOX_VERSION}-${CAMOUFOX_RELEASE}/camoufox-${CAMOUFOX_VERSION}-${CAMOUFOX_RELEASE}-lin.${ARCH}.zip" || true \
-    && echo "Downloading Camoufox: $URL" \
-    && curl -L -o /tmp/camoufox.zip "$URL" \
-    && (unzip -q /tmp/camoufox.zip -d /root/.cache/camoufox || true) \
-    && rm /tmp/camoufox.zip \
-    && chmod -R 755 /root/.cache/camoufox \
-    && echo "{\"version\":\"${CAMOUFOX_VERSION}\",\"release\":\"${CAMOUFOX_RELEASE}\"}" > /root/.cache/camoufox/version.json \
-    && test -f /root/.cache/camoufox/camoufox-bin && echo "Camoufox installed successfully"
-
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install --production
+# Install the latest published Camofox server package at build time
+# and copy its runtime files into /app.
+RUN set -eux; \
+    npm install -g "@askjo/camofox-browser@${CAMOFOX_BROWSER_NPM_TAG}"; \
+    PKG_DIR="$(npm root -g)/@askjo/camofox-browser"; \
+    cp -a "${PKG_DIR}/." /app/; \
+    node -e "const j=require('/app/package.json'); console.log('[build] camofox package: ' + j.name + '@' + j.version);"
 
-COPY server.js ./
-COPY lib/ ./lib/
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
 ENV NODE_ENV=production
-ENV CAMOFOX_PORT=3000
+ENV CAMOFOX_PORT=9377
 
-EXPOSE 3000
+EXPOSE 9377
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["node", "server.js"]

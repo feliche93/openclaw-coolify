@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.openclaw-custom
+      pull: true
       args:
         - OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}
         - AGENT_BROWSER_VERSION=latest
@@ -34,8 +35,8 @@ services:
       # Other runtime secrets (if not using Infisical):
       # - OPENCLAW_GATEWAY_TOKEN=...
       # - OPENCLAW_EXEC_SOCKET_TOKEN=...
-      # - AUTH_USERNAME=admin
-      # - AUTH_PASSWORD=...
+      # Cloudflare Access is the primary edge auth layer; keep nginx basic auth off.
+      - OPENCLAW_BASIC_AUTH=off
       # - OPENCLAW_PRIMARY_MODEL=...
       # Persisted state/workspace paths (align runtime + interactive CLI sessions)
       - OPENCLAW_STATE_DIR=/data/.openclaw
@@ -49,13 +50,15 @@ services:
       # Enables anti-detection browser automation + cookie import tooling.
       - CAMOFOX_BROWSER_URL=http://camofox:9377
       - CAMOFOX_BROWSER_AUTOSTART=false
+      # Keep camofox plugin on latest by default (or pin a specific version).
+      - CAMOFOX_PLUGIN_VERSION=latest
       # Hooks (optional)
       # - HOOKS_ENABLED=true
       # - HOOKS_TOKEN=my-hook-secret
     volumes:
       - openclaw-data:/data
-      # Custom JSON config for proxy/network tuning (merged with persisted config and env vars)
-      - ./openclaw.custom.json:/app/config/openclaw.json:ro
+      # Custom JSON config is baked into the image at /app/config/openclaw.json.
+      # For runtime overrides, point OPENCLAW_CUSTOM_CONFIG to a file on persistent storage.
     depends_on:
       - browser
       - camofox
@@ -63,6 +66,7 @@ services:
 
   browser:
     image: coollabsio/openclaw-browser:latest
+    pull_policy: always
     # No port exposure needed — proxied via openclaw at /browser/
     healthcheck:
       # Chrome DevTools proxy (nginx) is exposed on 9223 in this image.
@@ -83,6 +87,9 @@ services:
   camofox:
     build:
       context: ./camofox-browser
+      pull: true
+      args:
+        - CAMOFOX_BROWSER_NPM_TAG=${CAMOFOX_BROWSER_NPM_TAG:-latest}
     # Internal-only: no ports mapping. OpenClaw reaches it via Docker DNS: http://camofox:9377
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS \"http://127.0.0.1:${CAMOFOX_PORT:-9377}/health\" >/dev/null"]

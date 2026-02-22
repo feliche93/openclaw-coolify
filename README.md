@@ -242,6 +242,8 @@ The wrappers pass the runtime token via `INFISICAL_TOKEN` environment variable (
 | `AUTH_PASSWORD` | *(none)* | Basic auth password. Effective when `OPENCLAW_BASIC_AUTH=auto` (and set) or `OPENCLAW_BASIC_AUTH=on`. |
 | `AUTH_USERNAME` | `admin` | Username for basic auth. |
 
+If you run `OPENCLAW_BASIC_AUTH=off`, ensure origin access is restricted (for example Cloudflare Tunnel or firewall allowlist). Cloudflare Access alone does not protect direct-origin requests if the origin IP is publicly reachable.
+
 ### Gateway
 
 | Variable | Default | Description |
@@ -336,6 +338,8 @@ You can provide the shared cookie-import key via `CAMOFOX_API_KEY` directly, or 
 |---|---|---|
 | `CAMOFOX_BROWSER_URL` | | Camofox server URL (e.g. `http://camofox:9377`). When set, the container entrypoint installs/enables `@askjo/camofox-browser`. |
 | `CAMOFOX_BROWSER_AUTOSTART` | `false` | Set to `false` when the server runs as its own container (plugin must not spawn it). |
+| `CAMOFOX_PLUGIN_VERSION` | `latest` | OpenClaw plugin version selector for `@askjo/camofox-browser`. `latest` auto-updates on startup; set an exact version to pin. |
+| `CAMOFOX_BROWSER_NPM_TAG` | `latest` | Build arg for the `camofox` sidecar image (`@askjo/camofox-browser@<tag|version>`). Keep `latest` to follow upstream releases automatically. |
 | `CAMOFOX_BROWSER_PORT` | | Server port (used only if `CAMOFOX_BROWSER_URL` is not set). |
 | `CAMOFOX_API_KEY` | | Shared API key required to enable cookie import on the server. Must be set on both `openclaw` and `camofox` services. |
 | `SERVICE_BASE64_64_CAMOFOX` | | Optional alias: if `CAMOFOX_API_KEY` is unset and this is set, the entrypoints map it to `CAMOFOX_API_KEY`. |
@@ -471,13 +475,15 @@ If a channel env var is removed, that channel is cleaned from config on next sta
 | `COOLIFY_URL` | Coolify dashboard URL. |
 | `COOLIFY_BRANCH` | Git branch deployed. |
 
-## Custom JSON config (Docker mount)
+## Custom JSON config (Docker mount / baked config)
 
 For settings too complex for flat env vars (e.g. `channels.*.groups`, agent defaults, plugin config), mount a custom JSON file into the container:
 
 ```bash
 docker run -v ./my-openclaw.json:/app/config/openclaw.json ...
 ```
+
+In this repo's `docker-compose.yml`, `openclaw.custom.json` is baked into the image at build time (no single-file bind mount).
 
 Override the mount path with `OPENCLAW_CUSTOM_CONFIG` env var if needed.
 

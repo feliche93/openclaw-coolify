@@ -186,16 +186,58 @@ if [ -n "${CAMOFOX_BROWSER_URL:-}" ]; then
   echo "[entrypoint] camofox-browser requested (CAMOFOX_BROWSER_URL set)"
   cd /opt/openclaw/app
 
-  if [ ! -d "$STATE_DIR/extensions/camofox-browser" ]; then
-    echo "[entrypoint] installing @askjo/camofox-browser..."
+  CAMOFOX_PLUGIN_VERSION="${CAMOFOX_PLUGIN_VERSION:-latest}"
+  CAMOFOX_PLUGIN_SPEC="@askjo/camofox-browser"
+  if [ "$CAMOFOX_PLUGIN_VERSION" = "latest" ]; then
+    CAMOFOX_PLUGIN_SPEC="@askjo/camofox-browser@latest"
+  else
+    CAMOFOX_PLUGIN_SPEC="@askjo/camofox-browser@${CAMOFOX_PLUGIN_VERSION}"
+  fi
+
+  CAMOFOX_INSTALLED_VERSION="$(node -e "
+    const fs = require('fs');
+    const p = process.argv[1];
+    if (!fs.existsSync(p)) process.exit(0);
+    try {
+      const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+      if (j && j.version) process.stdout.write(String(j.version));
+    } catch (_) {}
+  " "$STATE_DIR/extensions/camofox-browser/package.json" 2>/dev/null || true)"
+
+  CAMOFOX_TARGET_VERSION="$CAMOFOX_PLUGIN_VERSION"
+  if [ "$CAMOFOX_PLUGIN_VERSION" = "latest" ]; then
+    CAMOFOX_TARGET_VERSION="$(node -e "
+      fetch('https://registry.npmjs.org/@askjo/camofox-browser/latest', {
+        headers: { 'User-Agent': 'openclaw-coolify' }
+      }).then(async (res) => {
+        if (!res.ok) process.exit(1);
+        const j = await res.json();
+        if (!j || !j.version) process.exit(2);
+        process.stdout.write(String(j.version));
+      }).catch(() => process.exit(1));
+    " 2>/dev/null || true)"
+  fi
+
+  NEEDS_CAMOFOX_INSTALL=0
+  if [ -z "$CAMOFOX_INSTALLED_VERSION" ]; then
+    NEEDS_CAMOFOX_INSTALL=1
+    echo "[entrypoint] camofox-browser plugin not installed; installing $CAMOFOX_PLUGIN_SPEC"
+  elif [ -n "$CAMOFOX_TARGET_VERSION" ] && [ "$CAMOFOX_INSTALLED_VERSION" != "$CAMOFOX_TARGET_VERSION" ]; then
+    NEEDS_CAMOFOX_INSTALL=1
+    echo "[entrypoint] camofox-browser plugin update: $CAMOFOX_INSTALLED_VERSION -> $CAMOFOX_TARGET_VERSION"
+  elif [ "$CAMOFOX_PLUGIN_VERSION" = "latest" ] && [ -z "$CAMOFOX_TARGET_VERSION" ]; then
+    echo "[entrypoint] camofox-browser plugin latest version lookup failed; keeping $CAMOFOX_INSTALLED_VERSION"
+  else
+    echo "[entrypoint] camofox-browser plugin already up-to-date ($CAMOFOX_INSTALLED_VERSION)"
+  fi
+
+  if [ "$NEEDS_CAMOFOX_INSTALL" -eq 1 ]; then
     # This can be slow on first boot (npm install + postinstall hooks).
     if command -v timeout >/dev/null 2>&1; then
-      timeout 900s openclaw plugins install @askjo/camofox-browser
+      timeout 900s openclaw plugins install "$CAMOFOX_PLUGIN_SPEC"
     else
-      openclaw plugins install @askjo/camofox-browser
+      openclaw plugins install "$CAMOFOX_PLUGIN_SPEC"
     fi
-  else
-    echo "[entrypoint] camofox-browser already installed"
   fi
 
   # Avoid relying on `openclaw plugins enable`, which can hang in some container
