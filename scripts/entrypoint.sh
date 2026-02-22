@@ -186,6 +186,29 @@ if [ -n "${CAMOFOX_BROWSER_URL:-}" ]; then
   echo "[entrypoint] camofox-browser requested (CAMOFOX_BROWSER_URL set)"
   cd /opt/openclaw/app
 
+  CAMOFOX_PLUGIN_DIR="$STATE_DIR/extensions/camofox-browser"
+  CAMOFOX_PLUGIN_PACKAGE_JSON="$CAMOFOX_PLUGIN_DIR/package.json"
+
+  camofox_installed_version() {
+    node -e "
+      const fs = require('fs');
+      const p = process.argv[1];
+      if (!fs.existsSync(p)) process.exit(0);
+      try {
+        const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+        if (j && j.version) process.stdout.write(String(j.version));
+      } catch (_) {}
+    " "$CAMOFOX_PLUGIN_PACKAGE_JSON" 2>/dev/null || true
+  }
+
+  install_camofox_plugin() {
+    if command -v timeout >/dev/null 2>&1; then
+      timeout 900s openclaw plugins install "$CAMOFOX_PLUGIN_SPEC"
+    else
+      openclaw plugins install "$CAMOFOX_PLUGIN_SPEC"
+    fi
+  }
+
   CAMOFOX_PLUGIN_VERSION="${CAMOFOX_PLUGIN_VERSION:-latest}"
   CAMOFOX_PLUGIN_SPEC="@askjo/camofox-browser"
   if [ "$CAMOFOX_PLUGIN_VERSION" = "latest" ]; then
@@ -194,15 +217,7 @@ if [ -n "${CAMOFOX_BROWSER_URL:-}" ]; then
     CAMOFOX_PLUGIN_SPEC="@askjo/camofox-browser@${CAMOFOX_PLUGIN_VERSION}"
   fi
 
-  CAMOFOX_INSTALLED_VERSION="$(node -e "
-    const fs = require('fs');
-    const p = process.argv[1];
-    if (!fs.existsSync(p)) process.exit(0);
-    try {
-      const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-      if (j && j.version) process.stdout.write(String(j.version));
-    } catch (_) {}
-  " "$STATE_DIR/extensions/camofox-browser/package.json" 2>/dev/null || true)"
+  CAMOFOX_INSTALLED_VERSION="$(camofox_installed_version)"
 
   CAMOFOX_TARGET_VERSION="$CAMOFOX_PLUGIN_VERSION"
   if [ "$CAMOFOX_PLUGIN_VERSION" = "latest" ]; then
@@ -232,33 +247,69 @@ if [ -n "${CAMOFOX_BROWSER_URL:-}" ]; then
   fi
 
   if [ "$NEEDS_CAMOFOX_INSTALL" -eq 1 ]; then
-    # This can be slow on first boot (npm install + postinstall hooks).
-    if command -v timeout >/dev/null 2>&1; then
-      timeout 900s openclaw plugins install "$CAMOFOX_PLUGIN_SPEC"
+    CAMOFOX_BACKUP_DIR=""
+    if [ -d "$CAMOFOX_PLUGIN_DIR" ]; then
+      CAMOFOX_BACKUP_DIR="$STATE_DIR/extensions/.camofox-browser.backup.$(date +%s)"
+      rm -rf "$CAMOFOX_BACKUP_DIR" || true
+      echo "[entrypoint] backing up existing camofox plugin to $CAMOFOX_BACKUP_DIR"
+      mv "$CAMOFOX_PLUGIN_DIR" "$CAMOFOX_BACKUP_DIR"
+    fi
+
+    if install_camofox_plugin; then
+      echo "[entrypoint] camofox-browser plugin install succeeded"
+      if [ -n "$CAMOFOX_BACKUP_DIR" ] && [ -d "$CAMOFOX_BACKUP_DIR" ]; then
+        rm -rf "$CAMOFOX_BACKUP_DIR" || true
+      fi
     else
-      openclaw plugins install "$CAMOFOX_PLUGIN_SPEC"
+      echo "[entrypoint] WARNING: camofox-browser plugin install failed"
+      if [ -n "$CAMOFOX_BACKUP_DIR" ] && [ -d "$CAMOFOX_BACKUP_DIR" ]; then
+        echo "[entrypoint] restoring previous camofox plugin from backup"
+        rm -rf "$CAMOFOX_PLUGIN_DIR" || true
+        mv "$CAMOFOX_BACKUP_DIR" "$CAMOFOX_PLUGIN_DIR" || true
+      else
+        echo "[entrypoint] no previous camofox plugin backup available"
+      fi
     fi
   fi
 
-  # Avoid relying on `openclaw plugins enable`, which can hang in some container
-  # environments even after printing a success message. Enabling is just a JSON
-  # config toggle, so patch it directly.
-  echo "[entrypoint] enabling + configuring camofox-browser..."
-  node -e "
-    const fs = require('fs');
-    const p = (process.env.OPENCLAW_STATE_DIR || '$STATE_DIR') + '/openclaw.json';
-    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-    j.plugins = j.plugins || {};
-    j.plugins.entries = j.plugins.entries || {};
-    j.plugins.entries['camofox-browser'] = j.plugins.entries['camofox-browser'] || {};
-    const e = j.plugins.entries['camofox-browser'];
-    e.enabled = true;
-    e.config = e.config || {};
-    if (process.env.CAMOFOX_BROWSER_URL) e.config.url = process.env.CAMOFOX_BROWSER_URL;
-    if (process.env.CAMOFOX_BROWSER_PORT) e.config.port = parseInt(process.env.CAMOFOX_BROWSER_PORT, 10);
-    if (process.env.CAMOFOX_BROWSER_AUTOSTART !== undefined) e.config.autoStart = process.env.CAMOFOX_BROWSER_AUTOSTART === 'true';
-    fs.writeFileSync(p, JSON.stringify(j, null, 2));
-  "
+  CAMOFOX_EFFECTIVE_VERSION="$(camofox_installed_version)"
+  if [ -n "$CAMOFOX_EFFECTIVE_VERSION" ]; then
+    echo "[entrypoint] camofox-browser plugin active version: $CAMOFOX_EFFECTIVE_VERSION"
+  fi
+
+  if [ -d "$CAMOFOX_PLUGIN_DIR" ]; then
+    # Avoid relying on `openclaw plugins enable`, which can hang in some container
+    # environments even after printing a success message. Enabling is just a JSON
+    # config toggle, so patch it directly.
+    echo "[entrypoint] enabling + configuring camofox-browser..."
+    node -e "
+      const fs = require('fs');
+      const p = (process.env.OPENCLAW_STATE_DIR || '$STATE_DIR') + '/openclaw.json';
+      const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+      j.plugins = j.plugins || {};
+      j.plugins.entries = j.plugins.entries || {};
+      j.plugins.entries['camofox-browser'] = j.plugins.entries['camofox-browser'] || {};
+      const e = j.plugins.entries['camofox-browser'];
+      e.enabled = true;
+      e.config = e.config || {};
+      if (process.env.CAMOFOX_BROWSER_URL) e.config.url = process.env.CAMOFOX_BROWSER_URL;
+      if (process.env.CAMOFOX_BROWSER_PORT) e.config.port = parseInt(process.env.CAMOFOX_BROWSER_PORT, 10);
+      if (process.env.CAMOFOX_BROWSER_AUTOSTART !== undefined) e.config.autoStart = process.env.CAMOFOX_BROWSER_AUTOSTART === 'true';
+      fs.writeFileSync(p, JSON.stringify(j, null, 2));
+    "
+  else
+    echo "[entrypoint] WARNING: camofox-browser plugin missing; disabling plugin config entry"
+    node -e "
+      const fs = require('fs');
+      const p = (process.env.OPENCLAW_STATE_DIR || '$STATE_DIR') + '/openclaw.json';
+      const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+      j.plugins = j.plugins || {};
+      j.plugins.entries = j.plugins.entries || {};
+      j.plugins.entries['camofox-browser'] = j.plugins.entries['camofox-browser'] || {};
+      j.plugins.entries['camofox-browser'].enabled = false;
+      fs.writeFileSync(p, JSON.stringify(j, null, 2));
+    "
+  fi
   chmod 600 "$STATE_DIR/openclaw.json"
 fi
 
