@@ -71,6 +71,10 @@ RUN rm -f /etc/nginx/sites-enabled/default
 # which is where we place the symlinks. This avoids polluting / with project files.
 COPY --from=openclaw-build /openclaw /opt/openclaw/app
 
+# Runtime container should be an immutable artifact, not a mutable git checkout.
+# This prevents "dirty tree" drift in production when dependencies normalize files.
+RUN rm -rf /opt/openclaw/app/.git
+
 RUN printf '%s\n' '#!/usr/bin/env bash' 'exec node /opt/openclaw/app/openclaw.mjs "$@"' > /usr/local/bin/openclaw \
   && chmod +x /usr/local/bin/openclaw
 

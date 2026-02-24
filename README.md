@@ -79,6 +79,18 @@ The `openclaw` service in `docker-compose.yml` builds `Dockerfile.openclaw-custo
 
 This installs `agent-browser` globally in the container so OpenClaw agents can call it directly.
 
+### Runtime vs Workspace Git
+
+- Runtime app path (`/opt/openclaw/app`) is treated as immutable artifact and does not keep `.git`.
+- Do repo edits from inside OpenClaw in persistent workspace paths (`/data/workspace`), not runtime app paths.
+- Practical flow for in-container edits:
+  1. `cd /data/workspace`
+  2. `git clone https://github.com/feliche93/openclaw-coolify.git` (first time)
+  3. edit/commit/push from that workspace clone
+  4. redeploy from Coolify (`main`)
+
+This keeps production runtime clean while preserving your ability to manage your repos from within OpenClaw.
+
 ### Get Latest Faster (Self-Build)
 
 This repo now mirrors upstream OpenClaw's source-build pattern for the custom image, so you can choose your update speed directly:
