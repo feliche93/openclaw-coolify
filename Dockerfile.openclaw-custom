@@ -172,6 +172,12 @@ RUN python3 -m venv /opt/whisper-venv \
   && /opt/whisper-venv/bin/pip install --no-cache-dir --prefer-binary openai-whisper \
   && ln -sf /opt/whisper-venv/bin/whisper /usr/local/bin/whisper
 
+# Provide the `nano-pdf` CLI for the built-in nano-pdf skill.
+RUN python3 -m venv /opt/nano-pdf-venv \
+  && /opt/nano-pdf-venv/bin/pip install --no-cache-dir --prefer-binary nano-pdf \
+  && ln -sf /opt/nano-pdf-venv/bin/nano-pdf /usr/local/bin/nano-pdf \
+  && nano-pdf --help >/dev/null
+
 # Provide the `himalaya` CLI for the built-in email skill.
 # Note: intentionally unpinned so each image build installs the latest release.
 RUN set -eux; \
