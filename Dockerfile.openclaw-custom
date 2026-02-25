@@ -178,6 +178,14 @@ RUN python3 -m venv /opt/nano-pdf-venv \
   && ln -sf /opt/nano-pdf-venv/bin/nano-pdf /usr/local/bin/nano-pdf \
   && nano-pdf --help >/dev/null
 
+# Provide the `scrapling` CLI with all optional extras and browser dependencies
+# so Scrapling fetchers/shell/MCP features can run inside OpenClaw.
+RUN python3 -m venv /opt/scrapling-venv \
+  && /opt/scrapling-venv/bin/pip install --no-cache-dir --prefer-binary "scrapling[all]" \
+  && ln -sf /opt/scrapling-venv/bin/scrapling /usr/local/bin/scrapling \
+  && scrapling install \
+  && scrapling --help >/dev/null
+
 # Provide the `himalaya` CLI for the built-in email skill.
 # Note: intentionally unpinned so each image build installs the latest release.
 RUN set -eux; \

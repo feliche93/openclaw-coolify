@@ -514,5 +514,5 @@ Arrays are replaced, not concatenated. Provider API keys are always read from en
 - Openclaw uses CalVer: `v2026.1.29` (roughly daily releases). Detected via GitHub Releases API.
 - Using native `ubuntu-24.04-arm` runners for arm64 builds (same pattern as coollabsio/pocketbase).
 - Config is environment-driven: set env vars → restart container → config updates automatically.
-- `Dockerfile.openclaw-custom` preinstalls `mcporter`, `codex`, `whisper`, `nano-pdf`, `himalaya`, `bvg`, and `goplaces` so matching built-in skills are not blocked by missing binaries.
+- `Dockerfile.openclaw-custom` preinstalls `mcporter`, `codex`, `whisper`, `nano-pdf`, `scrapling` (with optional extras and `scrapling install`), `himalaya`, `bvg`, and `goplaces` so matching built-in skills are not blocked by missing binaries.
 - `bvg` is installed from `https://github.com/feliche93/bvg-cli` at image build time via GitHub tarball (`BVGCLI_REPO`, `BVGCLI_REF` build args), so no manual repo clone step is required.
