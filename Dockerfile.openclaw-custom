@@ -165,6 +165,19 @@ RUN set -eux; \
 RUN npm i -g @openai/codex \
   && codex --version
 
+# Provide the `viral-app` CLI for viral.app API workflows.
+# Installed from GitHub source tarball so the wrapper can keep its local
+# OpenAPI + restish runtime files inside the image.
+ARG VIRAL_APP_SKILLS_REPO=fmd-labs/viral-app-skills
+ARG VIRAL_APP_SKILLS_REF=main
+RUN set -eux; \
+  rm -rf /opt/viral-app-skills; \
+  mkdir -p /opt/viral-app-skills; \
+  curl -fsSL "https://codeload.github.com/${VIRAL_APP_SKILLS_REPO}/tar.gz/${VIRAL_APP_SKILLS_REF}" \
+    | tar -xz -C /opt/viral-app-skills --strip-components=1; \
+  VIRAL_APP_BIN_DIR=/usr/local/bin /opt/viral-app-skills/scripts/install-global.sh; \
+  viral-app --help >/dev/null
+
 # Provide the `whisper` CLI for the built-in OpenAI Whisper skill.
 # This is a heavy dependency (pulls torch CPU wheels), but it makes the
 # "Missing: bin:whisper" requirement pass inside the container.

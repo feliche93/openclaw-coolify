@@ -406,6 +406,12 @@ else
   echo "[entrypoint] goplaces missing from PATH"
 fi
 
+if command -v viral-app >/dev/null 2>&1; then
+  echo "[entrypoint] viral-app available"
+else
+  echo "[entrypoint] viral-app missing from PATH"
+fi
+
 # ── Read hooks path from generated config (if hooks enabled) ─────────────────
 HOOKS_PATH=""
 HOOKS_PATH=$(node -e "
