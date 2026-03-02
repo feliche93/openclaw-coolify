@@ -24,7 +24,12 @@ WORKDIR /openclaw
 # You can also pass OPENCLAW_GIT_REF=latest-release to resolve the newest
 # published tag at build time.
 ARG OPENCLAW_GIT_REF=latest-release
+# Cache-busting marker: when latest stable release metadata changes upstream,
+# this URL payload changes and invalidates subsequent build layers.
+ADD https://api.github.com/repos/openclaw/openclaw/releases/latest /tmp/openclaw-latest-release.json
 RUN set -eux; \
+  release_marker="$(sha256sum /tmp/openclaw-latest-release.json | awk '{print $1}')"; \
+  echo "OpenClaw latest-release marker: ${release_marker}"; \
   ref="${OPENCLAW_GIT_REF}"; \
   if [ "${ref}" = "latest-release" ]; then \
     ref="v$(node -e 'fetch("https://api.github.com/repos/openclaw/openclaw/releases/latest",{headers:{"User-Agent":"openclaw-coolify"}}).then(r=>r.json()).then(j=>{const t=String(j.tag_name||"").replace(/^v/,"");if(!t)process.exit(2);process.stdout.write(t);}).catch(e=>{console.error(e);process.exit(1);})')"; \

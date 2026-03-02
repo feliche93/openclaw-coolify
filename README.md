@@ -118,6 +118,8 @@ OPENCLAW_GIT_REF=latest-release ./scripts/build.sh custom
 
 In Coolify, set `OPENCLAW_GIT_REF` as a build env var (`main`, `latest-release`, or pinned `vYYYY.M.D`) and redeploy.
 
+`Dockerfile.openclaw-custom` includes a `releases/latest` metadata marker layer so `latest-release` builds are less likely to get stuck on stale Docker cache.
+
 ## auto-update.yml workflow
 
 ```
@@ -134,11 +136,19 @@ Triggers: `schedule: '0 */6 * * *'` + `workflow_dispatch` (version, force_rebuil
 ## Coolify Scheduled Task: Deploy Only When New Upstream Version Exists
 
 If you deploy this repo in Coolify and want to redeploy only when a newer
-`openclaw/openclaw` release exists, add a Coolify Scheduled Task that runs:
+stable `openclaw/openclaw` release exists, add a Coolify Scheduled Task that runs:
 
 ```bash
 /app/scripts/redeploy-if-new-openclaw-release.sh
 ```
+
+What this script now does:
+- Resolves latest upstream stable release (not beta/prerelease)
+- Updates Coolify env `OPENCLAW_GIT_REF` to the resolved tag (for example `v2026.3.1`) before deploy
+- Compares running vs latest by core release number (`YYYY.M.D`) to avoid false drift when upstream stable tags still expose a `-beta` suffix in `openclaw --version`
+- Triggers deploy only when required (or when `COOLIFY_FORCE=true`)
+
+This avoids stale Docker cache behavior where `latest-release` can otherwise keep building an older prerelease layer.
 
 ## Backups (R2): OpenClaw `/data` Volume Only
 
