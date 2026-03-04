@@ -62,6 +62,8 @@ services:
     depends_on:
       - browser
       - camofox
+    mem_limit: 5g
+    mem_reservation: 1536m
     restart: unless-stopped
 
   browser:
@@ -82,6 +84,8 @@ services:
     volumes:
       - browser-data:/config
     shm_size: 2g
+    mem_limit: 3g
+    mem_reservation: 1024m
     restart: unless-stopped
 
   camofox:
@@ -113,6 +117,8 @@ services:
       - INFISICAL_CLIENT_SECRET
       - INFISICAL_API_URL
     shm_size: 2g
+    mem_limit: 1536m
+    mem_reservation: 512m
     restart: unless-stopped
 
 volumes:
