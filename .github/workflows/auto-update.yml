@@ -178,7 +178,7 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    needs: [check-release, merge-base-manifest]
+    needs: check-release
     if: needs.check-release.outputs.should_build == 'true'
     permissions:
       contents: read
@@ -211,7 +211,7 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: true
           build-args: |
-            BASE_IMAGE=${{ env.GITHUB_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}:${{ needs.check-release.outputs.version }}-${{ matrix.arch }}
+            OPENCLAW_GIT_REF=v${{ needs.check-release.outputs.version }}
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}-${{ matrix.arch }}
             ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}-${{ matrix.arch }}

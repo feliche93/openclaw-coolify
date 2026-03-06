@@ -51,7 +51,7 @@ jobs:
           file: ./Dockerfile
           push: false
           build-args: |
-            BASE_IMAGE=ghcr.io/coollabsio/openclaw-ci:${{ github.sha }}
+            OPENCLAW_GIT_REF=main
           tags: openclaw:ci
           cache-from: type=gha,scope=ci-final
           cache-to: type=gha,mode=max,scope=ci-final

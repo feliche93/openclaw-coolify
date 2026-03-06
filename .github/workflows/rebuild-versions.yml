@@ -171,8 +171,8 @@ jobs:
             "${BASE}:${VERSION}-arm64"
 
   build-final:
-    needs: [get-versions, check-base, merge-base-manifest]
-    if: always() && (needs.merge-base-manifest.result == 'success' || needs.merge-base-manifest.result == 'skipped')
+    needs: get-versions
+    if: always()
     strategy:
       fail-fast: false
       matrix:
@@ -217,7 +217,7 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: true
           build-args: |
-            BASE_IMAGE=${{ env.GITHUB_REGISTRY }}/${{ env.BASE_IMAGE_NAME }}:${{ matrix.version }}-${{ matrix.arch }}
+            OPENCLAW_GIT_REF=v${{ matrix.version }}
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.version }}-${{ matrix.arch }}
             ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.version }}-${{ matrix.arch }}

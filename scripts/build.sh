@@ -4,8 +4,8 @@
 # Usage:
 #   ./scripts/build.sh                  # build both base + final
 #   ./scripts/build.sh base             # build base only
-#   ./scripts/build.sh final            # build final only (requires base)
-#   ./scripts/build.sh custom           # build self-contained custom image
+#   ./scripts/build.sh final            # build final only from OPENCLAW_GIT_REF
+#   ./scripts/build.sh custom           # build the self-contained OpenClaw image
 #   ./scripts/build.sh browser          # build browser sidecar only
 #   OPENCLAW_GIT_REF=v2026.1.29 ./scripts/build.sh  # pin to a specific version
 #   OPENCLAW_GIT_REF=latest-release ./scripts/build.sh custom
@@ -15,7 +15,7 @@ set -euo pipefail
 OPENCLAW_GIT_REF="${OPENCLAW_GIT_REF:-latest-release}"
 BASE_TAG="openclaw-base:local"
 FINAL_TAG="openclaw:local"
-CUSTOM_TAG="openclaw-custom:local"
+CUSTOM_TAG="openclaw:local"
 BROWSER_TAG="openclaw-browser:local"
 AGENT_BROWSER_VERSION="${AGENT_BROWSER_VERSION:-latest}"
 TARGET="${1:-all}"
@@ -42,24 +42,25 @@ build_base() {
 }
 
 build_final() {
-  echo "==> Building final image..."
+  echo "==> Building final image (ref: ${OPENCLAW_GIT_REF})..."
   docker build \
     -f Dockerfile \
-    --build-arg "BASE_IMAGE=${BASE_TAG}" \
+    --build-arg "OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF}" \
+    --build-arg "AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION}" \
     -t "${FINAL_TAG}" \
     .
   echo "==> Final image built: ${FINAL_TAG}"
 }
 
 build_custom() {
-  echo "==> Building custom image from source (ref: ${OPENCLAW_GIT_REF})..."
+  echo "==> Building OpenClaw image from source (ref: ${OPENCLAW_GIT_REF})..."
   docker build \
-    -f Dockerfile.openclaw-custom \
+    -f Dockerfile \
     --build-arg "OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF}" \
     --build-arg "AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION}" \
     -t "${CUSTOM_TAG}" \
     .
-  echo "==> Custom image built: ${CUSTOM_TAG}"
+  echo "==> Image built: ${CUSTOM_TAG}"
 }
 
 build_browser() {

@@ -54,8 +54,7 @@ docker compose up -d
 
 Docker build strategy:
 1. **Base image** (`Dockerfile.base`) — builds openclaw from source. Tagged `coollabsio/openclaw-base:<version>`.
-2. **Final image** (`Dockerfile`) — FROM base, adds nginx + env-to-config scripts. Tagged `coollabsio/openclaw:<version>`.
-3. **Coolify custom image** (`Dockerfile.openclaw-custom`) — self-contained build from upstream OpenClaw source + extra CLIs/tools used by built-in skills.
+2. **Runtime image** (`Dockerfile`) — self-contained build from upstream OpenClaw source + extra CLIs/tools used by built-in skills.
 
 ## Files
 
@@ -63,8 +62,7 @@ Docker build strategy:
 .github/workflows/auto-update.yml   — cron every 6h, check openclaw releases, build+push
 .github/workflows/build.yml         — CI on push/PR (build only, no push)
 Dockerfile.base                     — multi-stage: build openclaw from source → slim runtime
-Dockerfile                          — FROM base, add nginx + config scripts + entrypoint
-Dockerfile.openclaw-custom          — self-contained Coolify image (builds OpenClaw from source + adds extra CLIs/tools, including global `agent-browser`)
+Dockerfile                          — self-contained image (builds OpenClaw from source + adds extra CLIs/tools, including global `agent-browser`)
 scripts/configure.js                — reads env vars, writes/patches openclaw.json
 scripts/entrypoint.sh               — container entrypoint: configure → nginx → gateway
 scripts/smoke.js                    — smoke test (openclaw --version)
@@ -73,7 +71,7 @@ nginx/default.conf                  — reverse proxy :8080 → :18789, optional
 .env.example                        — env var reference
 ```
 
-The `openclaw` service in `docker-compose.yml` builds `Dockerfile.openclaw-custom` with:
+The `openclaw` service in `docker-compose.yml` builds `Dockerfile` with:
 - `OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}` (build arg)
 - `AGENT_BROWSER_VERSION=latest` (build arg)
 
@@ -118,7 +116,7 @@ OPENCLAW_GIT_REF=latest-release ./scripts/build.sh custom
 
 In Coolify, set `OPENCLAW_GIT_REF` as a build env var (`main`, `latest-release`, or pinned `vYYYY.M.D`) and redeploy.
 
-`Dockerfile.openclaw-custom` includes a `releases/latest` metadata marker layer so `latest-release` builds are less likely to get stuck on stale Docker cache.
+`Dockerfile` includes a `releases/latest` metadata marker layer so `latest-release` builds are less likely to get stuck on stale Docker cache.
 
 ## auto-update.yml workflow
 
@@ -519,6 +517,6 @@ Arrays are replaced, not concatenated. Provider API keys are always read from en
 - Openclaw uses CalVer: `v2026.1.29` (roughly daily releases). Detected via GitHub Releases API.
 - Using native `ubuntu-24.04-arm` runners for arm64 builds (same pattern as coollabsio/pocketbase).
 - Config is environment-driven: set env vars → restart container → config updates automatically.
-- `Dockerfile.openclaw-custom` preinstalls `mcporter`, `codex`, `viral-app`, `whisper`, `nano-pdf`, `scrapling` (with optional extras and `scrapling install`), `himalaya`, `bvg`, and `goplaces` so matching built-in skills are not blocked by missing binaries.
+- `Dockerfile` preinstalls `mcporter`, `codex`, `viral-app`, `whisper`, `nano-pdf`, `scrapling` (with optional extras and `scrapling install`), `himalaya`, `bvg`, and `goplaces` so matching built-in skills are not blocked by missing binaries.
 - `bvg` is installed from `https://github.com/feliche93/bvg-cli` at image build time via GitHub tarball (`BVGCLI_REPO`, `BVGCLI_REF` build args), so no manual repo clone step is required.
 - `viral-app` is installed from `https://github.com/fmd-labs/viral-app-skills` at image build time via GitHub tarball (`VIRAL_APP_SKILLS_REPO`, `VIRAL_APP_SKILLS_REF` build args), so agents can call it directly from the container.
