@@ -2,12 +2,12 @@ services:
   openclaw:
     build:
       context: .
-      dockerfile: Dockerfile.openclaw-custom
+      dockerfile: Dockerfile
       pull: true
       args:
         - OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}
         - AGENT_BROWSER_VERSION=latest
-    image: openclaw-custom:latest
+    image: openclaw:latest
     ports:
       - "8081:8080"
     healthcheck:
