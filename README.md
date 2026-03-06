@@ -364,10 +364,6 @@ You can provide the shared cookie-import key via `CAMOFOX_API_KEY` directly, or 
 | `CAMOFOX_BROWSER_PORT` | | Server port (used only if `CAMOFOX_BROWSER_URL` is not set). |
 | `CAMOFOX_API_KEY` | | Shared API key required to enable cookie import on the server. Must be set on both `openclaw` and `camofox` services. |
 | `SERVICE_BASE64_64_CAMOFOX` | | Optional alias: if `CAMOFOX_API_KEY` is unset and this is set, the entrypoints map it to `CAMOFOX_API_KEY`. |
-| `PROXY_HOST` | | Proxy host for Camoufox outbound traffic (set on `camofox` service). |
-| `PROXY_PORT` | | Proxy port for Camoufox outbound traffic (set on `camofox` service). |
-| `PROXY_USERNAME` | | Proxy username/login for authenticated proxies (set on `camofox` service). |
-| `PROXY_PASSWORD` | | Proxy password for authenticated proxies (set on `camofox` service). |
 
 ### Channels (optional)
 

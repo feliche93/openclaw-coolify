@@ -115,11 +115,6 @@ services:
       retries: 12
     environment:
       - CAMOFOX_PORT=9377
-      # Optional residential/datacenter proxy for Camoufox traffic
-      - PROXY_HOST=${PROXY_HOST:-}
-      - PROXY_PORT=${PROXY_PORT:-}
-      - PROXY_USERNAME=${PROXY_USERNAME:-}
-      - PROXY_PASSWORD=${PROXY_PASSWORD:-}
       # Reuse the same Universal Auth Infisical config so camofox can inject
       # secrets like CAMOFOX_API_KEY at runtime too.
       - INFISICAL_PROJECT_ID=${INFISICAL_PROJECT_ID:-}
