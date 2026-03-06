@@ -12,20 +12,23 @@ services:
       - "8081:8080"
     healthcheck:
       # Use nginx readiness endpoint. Returns 503 until the gateway is up.
-      test: ["CMD-SHELL", "curl -fsS \"http://127.0.0.1:${PORT:-8080}/healthz\" >/dev/null"]
+      test:
+        [
+          "CMD-SHELL",
+          'curl -fsS "http://127.0.0.1:${PORT:-8080}/healthz" >/dev/null',
+        ]
       interval: 10s
       timeout: 3s
       retries: 12
     environment:
-      # Infisical (recommended for Coolify): if set, entrypoint re-execs under
-      # `infisical run` so secrets are injected at runtime.
-      - INFISICAL_TOKEN
-      - INFISICAL_PROJECT_ID
-      - INFISICAL_ENV
-      - INFISICAL_PATH
-      - INFISICAL_CLIENT_ID
-      - INFISICAL_CLIENT_SECRET
-      - INFISICAL_API_URL
+      # Infisical via Universal Auth (preferred for Coolify). Keep defaults in
+      # Compose so Coolify only needs the machine-identity vars + project/API URL.
+      - INFISICAL_PROJECT_ID=${INFISICAL_PROJECT_ID:-}
+      - INFISICAL_ENV=${INFISICAL_ENV:-prod}
+      - INFISICAL_PATH=${INFISICAL_PATH:-/}
+      - INFISICAL_CLIENT_ID=${INFISICAL_CLIENT_ID:-}
+      - INFISICAL_CLIENT_SECRET=${INFISICAL_CLIENT_SECRET:-}
+      - INFISICAL_API_URL=${INFISICAL_API_URL:-}
 
       # Provider (at least one required)
       #- ANTHROPIC_API_KEY=sk-ant-...
@@ -74,7 +77,11 @@ services:
     # No port exposure needed — proxied via openclaw at /browser/
     healthcheck:
       # Chrome DevTools proxy (nginx) is exposed on 9223 in this image.
-      test: ["CMD-SHELL", "curl -fsS \"http://127.0.0.1:9223/json/version\" >/dev/null"]
+      test:
+        [
+          "CMD-SHELL",
+          'curl -fsS "http://127.0.0.1:9223/json/version" >/dev/null',
+        ]
       interval: 10s
       timeout: 3s
       retries: 12
@@ -98,7 +105,11 @@ services:
         - CAMOFOX_BROWSER_NPM_TAG=${CAMOFOX_BROWSER_NPM_TAG:-latest}
     # Internal-only: no ports mapping. OpenClaw reaches it via Docker DNS: http://camofox:9377
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS \"http://127.0.0.1:${CAMOFOX_PORT:-9377}/health\" >/dev/null"]
+      test:
+        [
+          "CMD-SHELL",
+          'curl -fsS "http://127.0.0.1:${CAMOFOX_PORT:-9377}/health" >/dev/null',
+        ]
       interval: 10s
       timeout: 3s
       retries: 12
@@ -109,15 +120,14 @@ services:
       - PROXY_PORT=${PROXY_PORT:-}
       - PROXY_USERNAME=${PROXY_USERNAME:-}
       - PROXY_PASSWORD=${PROXY_PASSWORD:-}
-      # Infisical (recommended): camofox-browser entrypoint re-execs under
-      # `infisical run` so the cookie import key can come from Infisical too.
-      - INFISICAL_TOKEN
-      - INFISICAL_PROJECT_ID
-      - INFISICAL_ENV
-      - INFISICAL_PATH
-      - INFISICAL_CLIENT_ID
-      - INFISICAL_CLIENT_SECRET
-      - INFISICAL_API_URL
+      # Reuse the same Universal Auth Infisical config so camofox can inject
+      # secrets like CAMOFOX_API_KEY at runtime too.
+      - INFISICAL_PROJECT_ID=${INFISICAL_PROJECT_ID:-}
+      - INFISICAL_ENV=${INFISICAL_ENV:-prod}
+      - INFISICAL_PATH=${INFISICAL_PATH:-/}
+      - INFISICAL_CLIENT_ID=${INFISICAL_CLIENT_ID:-}
+      - INFISICAL_CLIENT_SECRET=${INFISICAL_CLIENT_SECRET:-}
+      - INFISICAL_API_URL=${INFISICAL_API_URL:-}
     shm_size: 2g
     mem_limit: 1536m
     mem_reservation: 512m

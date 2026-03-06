@@ -215,17 +215,16 @@ If a provider env var is removed, that provider section is cleaned from `opencla
 
 ### Infisical (optional; recommended for Coolify)
 
-If Infisical credentials are set, the container entrypoints re-exec themselves under `infisical run` and inject secrets at runtime. This lets you keep almost all application secrets out of Coolify env vars.
+This Compose deployment uses Infisical Universal Auth. The container entrypoints exchange `INFISICAL_CLIENT_ID` + `INFISICAL_CLIENT_SECRET` for a runtime access token, then re-exec themselves under `infisical run` so secrets are injected at runtime. This lets you keep almost all application secrets out of Coolify env vars.
 The wrappers pass the runtime token via `INFISICAL_TOKEN` environment variable (not `--token`) to avoid exposing it in `ps`/`docker top` command arguments.
 
 | Variable | Default | Description |
 |---|---|---|
-| `INFISICAL_TOKEN` | | Infisical service token (if your Infisical supports service tokens). |
 | `INFISICAL_PROJECT_ID` | | Infisical project ID. |
 | `INFISICAL_ENV` | `prod` | Infisical environment slug (e.g. `dev`, `staging`, `prod`). |
 | `INFISICAL_PATH` | `/` | Secrets folder path. |
-| `INFISICAL_CLIENT_ID` | | Universal Auth client ID (machine identity). Used when `INFISICAL_TOKEN` is not set. |
-| `INFISICAL_CLIENT_SECRET` | | Universal Auth client secret (machine identity). Used when `INFISICAL_TOKEN` is not set. |
+| `INFISICAL_CLIENT_ID` | | Universal Auth client ID (machine identity). |
+| `INFISICAL_CLIENT_SECRET` | | Universal Auth client secret (machine identity). |
 | `INFISICAL_API_URL` | | Infisical API base URL (required for self-hosted / non-US). Example: `https://infisical.example.com/api`. |
 
 ### Deepgram (audio transcription, optional)
