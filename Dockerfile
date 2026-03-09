@@ -63,7 +63,6 @@ RUN apt-get update \
     curl \
     bzip2 \
     ffmpeg \
-    gh \
     python3 \
     python3-pip \
     python3-venv \
@@ -88,7 +87,7 @@ RUN ln -s /opt/openclaw/app/docs /opt/openclaw/docs \
   && ln -s /opt/openclaw/app/package.json /opt/openclaw/package.json
 
 # restic (for volume backups to R2 via Coolify Scheduled Tasks)
-ARG RESTIC_VERSION=0.17.3
+ARG RESTIC_VERSION=latest
 RUN set -eux; \
   arch="$(uname -m)"; \
   case "$arch" in \
@@ -96,12 +95,39 @@ RUN set -eux; \
     aarch64|arm64) restic_arch="arm64" ;; \
     *) echo "Unsupported architecture for restic: $arch" >&2; exit 1 ;; \
   esac; \
-  url="https://github.com/restic/restic/releases/download/v${RESTIC_VERSION}/restic_${RESTIC_VERSION}_linux_${restic_arch}.bz2"; \
+  version="${RESTIC_VERSION}"; \
+  if [ "${version}" = "latest" ]; then \
+    version="$(node -e 'fetch("https://api.github.com/repos/restic/restic/releases/latest",{headers:{"User-Agent":"openclaw-coolify"}}).then(r=>r.json()).then(j=>process.stdout.write(String(j.tag_name||"").replace(/^v/,""))).catch(e=>{console.error(e);process.exit(1);})')"; \
+  fi; \
+  if [ -z "$version" ]; then echo "Failed to resolve latest restic version" >&2; exit 1; fi; \
+  url="https://github.com/restic/restic/releases/download/v${version}/restic_${version}_linux_${restic_arch}.bz2"; \
   curl -fsSL "$url" -o /tmp/restic.bz2; \
   bunzip2 /tmp/restic.bz2; \
   install -m 0755 /tmp/restic /usr/local/bin/restic; \
   rm -f /tmp/restic; \
   restic version
+
+# GitHub CLI
+# Note: intentionally unpinned so each image build installs the latest release.
+ARG GH_VERSION=latest
+RUN set -eux; \
+  arch="$(uname -m)"; \
+  case "$arch" in \
+    x86_64) gh_arch="amd64" ;; \
+    aarch64|arm64) gh_arch="arm64" ;; \
+    *) echo "Unsupported architecture for gh: $arch" >&2; exit 1 ;; \
+  esac; \
+  version="${GH_VERSION}"; \
+  if [ "${version}" = "latest" ]; then \
+    version="$(node -e 'fetch("https://api.github.com/repos/cli/cli/releases/latest",{headers:{"User-Agent":"openclaw-coolify"}}).then(r=>r.json()).then(j=>process.stdout.write(String(j.tag_name||"").replace(/^v/,""))).catch(e=>{console.error(e);process.exit(1);})')"; \
+  fi; \
+  if [ -z "$version" ]; then echo "Failed to resolve latest gh version" >&2; exit 1; fi; \
+  url="https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_${gh_arch}.tar.gz"; \
+  curl -fsSL "$url" -o /tmp/gh.tgz; \
+  tar -xzf /tmp/gh.tgz -C /tmp; \
+  install -m 0755 "/tmp/gh_${version}_linux_${gh_arch}/bin/gh" /usr/local/bin/gh; \
+  rm -rf /tmp/gh.tgz "/tmp/gh_${version}_linux_${gh_arch}"; \
+  gh --version | head -n1
 
 # Infisical CLI (used for runtime secret injection via INFISICAL_TOKEN)
 # Note: intentionally unpinned so each image build installs the latest release.
@@ -129,8 +155,7 @@ RUN curl -fsSL https://bun.sh/install | bash \
   && ln -sf /root/.bun/bin/bunx /usr/local/bin/bunx
 
 # Google Workspace CLI (gog)
-# - Pin version for reproducible Coolify builds; override with --build-arg if needed.
-ARG GOGCLI_VERSION=0.11.0
+ARG GOGCLI_VERSION=latest
 RUN set -eux; \
   arch="$(uname -m)"; \
   case "$arch" in \
@@ -138,7 +163,12 @@ RUN set -eux; \
     aarch64|arm64) go_arch="arm64" ;; \
     *) echo "Unsupported architecture for gogcli: $arch" >&2; exit 1 ;; \
   esac; \
-  url="https://github.com/steipete/gogcli/releases/download/v${GOGCLI_VERSION}/gogcli_${GOGCLI_VERSION}_linux_${go_arch}.tar.gz"; \
+  version="${GOGCLI_VERSION}"; \
+  if [ "${version}" = "latest" ]; then \
+    version="$(node -e 'fetch("https://api.github.com/repos/steipete/gogcli/releases/latest",{headers:{"User-Agent":"openclaw-coolify"}}).then(r=>r.json()).then(j=>process.stdout.write(String(j.tag_name||"").replace(/^v/,""))).catch(e=>{console.error(e);process.exit(1);})')"; \
+  fi; \
+  if [ -z "$version" ]; then echo "Failed to resolve latest gog version" >&2; exit 1; fi; \
+  url="https://github.com/steipete/gogcli/releases/download/v${version}/gogcli_${version}_linux_${go_arch}.tar.gz"; \
   curl -fsSL "$url" -o /tmp/gogcli.tgz; \
   tar -xzf /tmp/gogcli.tgz -C /tmp; \
   install -m 0755 /tmp/gog /usr/local/bin/gog; \
