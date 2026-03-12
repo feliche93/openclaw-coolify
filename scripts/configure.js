@@ -110,6 +110,21 @@ if (!config.agents.defaults.workspace) {
   config.agents.defaults.workspace = WORKSPACE_DIR;
 }
 ensure(config, "agents", "defaults", "model");
+ensure(config, "agents", "defaults", "memorySearch");
+
+if (process.env.OPENCLAW_MEMORY_SEARCH_MODEL) {
+  config.agents.defaults.memorySearch.model = process.env.OPENCLAW_MEMORY_SEARCH_MODEL.trim();
+  console.log(`[configure] memory search model (override): ${config.agents.defaults.memorySearch.model}`);
+}
+if (process.env.OPENCLAW_MEMORY_SEARCH_OUTPUT_DIMENSIONALITY) {
+  const dims = parseInt(process.env.OPENCLAW_MEMORY_SEARCH_OUTPUT_DIMENSIONALITY, 10);
+  if (Number.isFinite(dims)) {
+    config.agents.defaults.memorySearch.outputDimensionality = dims;
+    console.log(`[configure] memory search outputDimensionality (override): ${dims}`);
+  } else {
+    console.warn("[configure] ignoring invalid OPENCLAW_MEMORY_SEARCH_OUTPUT_DIMENSIONALITY");
+  }
+}
 
 // ── Providers ───────────────────────────────────────────────────────────────
 //

@@ -15,6 +15,17 @@
       }
     }
   },
+  "agents": {
+    "defaults": {
+      "memorySearch": {
+        "provider": "gemini",
+        "model": "gemini-embedding-2-preview",
+        "remote": {
+          "apiKey": "GEMINI_API_KEY"
+        }
+      }
+    }
+  },
   "secrets": {
     "providers": {
       "default": {

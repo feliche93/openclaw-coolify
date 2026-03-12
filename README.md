@@ -255,6 +255,15 @@ The wrappers pass the runtime token via `INFISICAL_TOKEN` environment variable (
 |---|---|
 | `OPENCLAW_PRIMARY_MODEL` | Override auto-selected primary model. Format: `provider/model-id` (e.g. `anthropic/claude-sonnet-4-5-20250929`). |
 
+### Memory search
+
+By default, the baked `openclaw.custom.json` config uses Gemini for memory search with `gemini-embedding-2-preview` and resolves the embedding key from `GEMINI_API_KEY`. This improves recall for memory spread across many Markdown files and works with the standard Coolify + Infisical runtime injection used by this image.
+
+| Variable | Description |
+|---|---|
+| `OPENCLAW_MEMORY_SEARCH_MODEL` | Override the default memory embedding model. Defaults to `gemini-embedding-2-preview`. |
+| `OPENCLAW_MEMORY_SEARCH_OUTPUT_DIMENSIONALITY` | Optional Gemini embedding-2 output size override. Valid values: `768`, `1536`, `3072`. Changing this forces a full memory reindex. |
+
 ### HTTP Basic Auth (recommended)
 
 | Variable | Default | Description |
