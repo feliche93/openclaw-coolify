@@ -62,7 +62,7 @@ Docker build strategy:
 .github/workflows/auto-update.yml   — cron every 6h, check openclaw releases, build+push
 .github/workflows/build.yml         — CI on push/PR (build only, no push)
 Dockerfile.base                     — multi-stage: build openclaw from source → slim runtime
-Dockerfile                          — self-contained image (builds OpenClaw from source + adds extra CLIs/tools, including global `agent-browser`)
+Dockerfile                          — self-contained image (builds OpenClaw from source + adds extra CLIs/tools, including global `agent-browser` and `summarize`)
 scripts/configure.js                — reads env vars, writes/patches openclaw.json
 scripts/entrypoint.sh               — container entrypoint: configure → nginx → gateway
 scripts/smoke.js                    — smoke test (openclaw --version)
@@ -74,8 +74,10 @@ nginx/default.conf                  — reverse proxy :8080 → :18789, optional
 The `openclaw` service in `docker-compose.yml` builds `Dockerfile` with:
 - `OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}` (build arg)
 - `AGENT_BROWSER_VERSION=latest` (build arg)
+- `SUMMARIZE_VERSION=latest` (build arg)
 
-This installs `agent-browser` globally in the container so OpenClaw agents can call it directly.
+This installs `agent-browser` and `summarize` globally in the container so OpenClaw agents can call them directly.
+It also vendors the `steipete/clawdis` `summarize` skill into the container's global OpenClaw skill directory, plus Codex for in-container coding-agent workflows.
 
 ### Runtime vs Workspace Git
 
@@ -517,6 +519,7 @@ Arrays are replaced, not concatenated. Provider API keys are always read from en
 - Openclaw uses CalVer: `v2026.1.29` (roughly daily releases). Detected via GitHub Releases API.
 - Using native `ubuntu-24.04-arm` runners for arm64 builds (same pattern as coollabsio/pocketbase).
 - Config is environment-driven: set env vars → restart container → config updates automatically.
-- `Dockerfile` preinstalls `mcporter`, `codex`, `viral-app`, `whisper`, `nano-pdf`, `scrapling` (with optional extras and `scrapling install`), `himalaya`, `bvg`, and `goplaces` so matching built-in skills are not blocked by missing binaries.
+- `Dockerfile` preinstalls `mcporter`, `agent-browser`, `summarize`, `codex`, `viral-app`, `whisper`, `nano-pdf`, `scrapling` (with optional extras and `scrapling install`), `himalaya`, `bvg`, and `goplaces` so matching built-in skills are not blocked by missing binaries.
+- The `summarize` skill from [`steipete/clawdis`](https://skills.sh/steipete/clawdis/summarize) is also baked into the image so it is available by default to OpenClaw, with a matching Codex copy for in-container coding-agent workflows.
 - `bvg` is installed from `https://github.com/feliche93/bvg-cli` at image build time via GitHub tarball (`BVGCLI_REPO`, `BVGCLI_REF` build args), so no manual repo clone step is required.
 - `viral-app` is installed from `https://github.com/fmd-labs/viral-app-skills` at image build time via GitHub tarball (`VIRAL_APP_SKILLS_REPO`, `VIRAL_APP_SKILLS_REF` build args), so agents can call it directly from the container.

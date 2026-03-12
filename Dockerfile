@@ -189,6 +189,34 @@ RUN set -eux; \
   fi; \
   agent-browser >/dev/null
 
+# Provide the `summarize` CLI for link-to-summary workflows.
+ARG SUMMARIZE_VERSION=latest
+RUN set -eux; \
+  if [ "${SUMMARIZE_VERSION}" = "latest" ]; then \
+    npm i -g @steipete/summarize; \
+  else \
+    npm i -g "@steipete/summarize@${SUMMARIZE_VERSION}"; \
+  fi; \
+  summarize --help >/dev/null
+
+# Vendor the `summarize` skill into the container's global agent skill dirs.
+# For this image, OpenClaw is the primary target; Codex is included because it
+# is also installed in the runtime image and may be invoked from the container.
+RUN set -eux; \
+  tmpdir="$(mktemp -d)"; \
+  curl -fsSL https://codeload.github.com/steipete/clawdis/tar.gz/main | tar -xzf - -C "$tmpdir"; \
+  skill_src="$(find "$tmpdir" -path '*/skills/summarize' -type d | head -n1)"; \
+  [ -n "$skill_src" ]; \
+  for rel in \
+    ".codex/skills/summarize" \
+    ".openclaw/skills/summarize" \
+  ; do \
+    dest="/root/$rel"; \
+    mkdir -p "$dest"; \
+    cp -R "$skill_src"/. "$dest"/; \
+  done; \
+  rm -rf "$tmpdir"
+
 # OpenClaw ships a bundled "coding-agent" skill that can drive Codex CLI, but the
 # upstream image doesn't include the `codex` binary. Install it so the skill is
 # eligible inside Coolify deployments.

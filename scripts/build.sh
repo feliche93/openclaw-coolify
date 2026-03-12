@@ -18,6 +18,7 @@ FINAL_TAG="openclaw:local"
 CUSTOM_TAG="openclaw:local"
 BROWSER_TAG="openclaw-browser:local"
 AGENT_BROWSER_VERSION="${AGENT_BROWSER_VERSION:-latest}"
+SUMMARIZE_VERSION="${SUMMARIZE_VERSION:-latest}"
 TARGET="${1:-all}"
 
 resolve_latest_release() {
@@ -47,6 +48,7 @@ build_final() {
     -f Dockerfile \
     --build-arg "OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF}" \
     --build-arg "AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION}" \
+    --build-arg "SUMMARIZE_VERSION=${SUMMARIZE_VERSION}" \
     -t "${FINAL_TAG}" \
     .
   echo "==> Final image built: ${FINAL_TAG}"
@@ -58,6 +60,7 @@ build_custom() {
     -f Dockerfile \
     --build-arg "OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF}" \
     --build-arg "AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION}" \
+    --build-arg "SUMMARIZE_VERSION=${SUMMARIZE_VERSION}" \
     -t "${CUSTOM_TAG}" \
     .
   echo "==> Image built: ${CUSTOM_TAG}"
