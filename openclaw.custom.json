@@ -17,6 +17,9 @@
   },
   "agents": {
     "defaults": {
+      "model": {
+        "primary": "openai/gpt-5.3-codex-spark"
+      },
       "memorySearch": {
         "provider": "gemini",
         "model": "gemini-embedding-2-preview",

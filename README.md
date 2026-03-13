@@ -253,7 +253,7 @@ The wrappers pass the runtime token via `INFISICAL_TOKEN` environment variable (
 
 | Variable | Description |
 |---|---|
-| `OPENCLAW_PRIMARY_MODEL` | Override auto-selected primary model. Format: `provider/model-id` (e.g. `anthropic/claude-sonnet-4-5-20250929`). |
+| `OPENCLAW_PRIMARY_MODEL` | Override the default primary model. Format: `provider/model-id` (e.g. `openai/gpt-5.3-codex-spark`). |
 
 ### Memory search
 
