@@ -63,6 +63,7 @@ RUN apt-get update \
     curl \
     bzip2 \
     ffmpeg \
+    yt-dlp \
     python3 \
     python3-pip \
     python3-venv \
