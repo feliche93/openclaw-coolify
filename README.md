@@ -73,10 +73,10 @@ nginx/default.conf                  — reverse proxy :8080 → :18789, optional
 
 The `openclaw` service in `docker-compose.yml` builds `Dockerfile` with:
 - `OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}` (build arg)
-- `AGENT_BROWSER_VERSION=latest` (build arg)
+- `AGENT_BROWSER_VERSION=latest` (build arg; override with an exact version if you want to pin)
 - `SUMMARIZE_VERSION=latest` (build arg)
 
-This installs `agent-browser`, `summarize`, and `yt-dlp` globally in the container so OpenClaw agents can call them directly.
+This installs `agent-browser`, `summarize`, and `yt-dlp` globally in the container so OpenClaw agents can call them directly. By default, `agent-browser` follows the npm `latest` tag at build time, but you can override the build arg with an exact version if you want reproducible pinning.
 It also vendors the `steipete/clawdis` `summarize` skill into the container's global OpenClaw skill directory, plus Codex for in-container coding-agent workflows.
 
 ### Runtime vs Workspace Git

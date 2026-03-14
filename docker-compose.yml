@@ -6,7 +6,7 @@ services:
       pull: true
       args:
         - OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}
-        - AGENT_BROWSER_VERSION=latest
+        - AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION:-latest}
         - SUMMARIZE_VERSION=latest
     image: openclaw:latest
     ports:
