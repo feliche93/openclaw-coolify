@@ -419,6 +419,8 @@ You can provide the shared cookie-import key via `CAMOFOX_API_KEY` directly, or 
 | `TELEGRAM_MESSAGE_PREFIX` | | Prefix prepended to inbound messages. |
 `TELEGRAM_BOT_TOKEN` is still required when you want to activate/configure the default top-level Telegram account from env alone. If Telegram is already configured via custom JSON or persisted state (for example multi-account setups), `TELEGRAM_WEBHOOK_URL`, `TELEGRAM_WEBHOOK_SECRET`, and `TELEGRAM_WEBHOOK_PATH` still override the top-level Telegram webhook settings.
 
+When Telegram webhook mode is enabled, `entrypoint.sh` reads the resolved `channels.telegram.webhookPath` from `openclaw.json` after `configure.js` runs and generates an nginx `location` block that bypasses HTTP basic auth for that path. Telegram/OpenClaw handle webhook authentication via the webhook secret instead.
+
 | `DISCORD_BOT_TOKEN` | | Discord bot token. Enable MESSAGE CONTENT INTENT in Discord Developer Portal. |
 | `DISCORD_DM_POLICY` | `pairing` | DM access policy: `pairing`, `allowlist`, `open`, or `disabled`. |
 | `DISCORD_DM_ALLOW_FROM` | | Comma-separated user IDs/names for DM allowlist. |

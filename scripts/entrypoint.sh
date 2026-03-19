@@ -424,6 +424,19 @@ if [ -n "$HOOKS_PATH" ]; then
   echo "[entrypoint] hooks enabled, path: $HOOKS_PATH (will bypass HTTP auth)"
 fi
 
+# ── Read Telegram webhook path from generated config (if enabled) ────────────
+TELEGRAM_WEBHOOK_PATH=""
+TELEGRAM_WEBHOOK_PATH=$(node -e "
+  try {
+    const c = JSON.parse(require('fs').readFileSync('$STATE_DIR/openclaw.json','utf8'));
+    const path = c.channels && c.channels.telegram && c.channels.telegram.webhookPath;
+    if (path) process.stdout.write(path);
+  } catch {}
+" 2>/dev/null || true)
+if [ -n "$TELEGRAM_WEBHOOK_PATH" ]; then
+  echo "[entrypoint] telegram webhook enabled, path: $TELEGRAM_WEBHOOK_PATH (will bypass HTTP auth)"
+fi
+
 # ── Generate nginx config ────────────────────────────────────────────────────
 AUTH_PASSWORD="${AUTH_PASSWORD:-}"
 AUTH_USERNAME="${AUTH_USERNAME:-admin}"
@@ -476,6 +489,27 @@ if [ -n "$HOOKS_PATH" ]; then
   HOOKS_LOCATION_BLOCK="location ${HOOKS_PATH} {
         proxy_pass http://127.0.0.1:${GATEWAY_PORT};
         proxy_set_header Authorization \"Bearer ${GATEWAY_TOKEN}\";
+
+        proxy_set_header Host \\\$host;
+        proxy_set_header X-Real-IP \\\$remote_addr;
+        proxy_set_header X-Forwarded-For \\\$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \\\$scheme;
+
+        proxy_http_version 1.1;
+
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+
+        error_page 502 503 504 /starting.html;
+    }"
+fi
+
+# Build Telegram webhook location block (skips HTTP basic auth, Telegram/OpenClaw
+# handle webhook auth directly via the secret-token header).
+TELEGRAM_WEBHOOK_LOCATION_BLOCK=""
+if [ -n "$TELEGRAM_WEBHOOK_PATH" ]; then
+  TELEGRAM_WEBHOOK_LOCATION_BLOCK="location ${TELEGRAM_WEBHOOK_PATH} {
+        proxy_pass http://127.0.0.1:8787;
 
         proxy_set_header Host \\\$host;
         proxy_set_header X-Real-IP \\\$remote_addr;
@@ -562,6 +596,7 @@ server {
     }
 
     ${HOOKS_LOCATION_BLOCK}
+    ${TELEGRAM_WEBHOOK_LOCATION_BLOCK}
 
     location / {
         ${AUTH_BLOCK}
