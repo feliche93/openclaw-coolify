@@ -379,22 +379,20 @@ if (process.env.DEEPGRAM_API_KEY) {
 // provides a channel, it stays unconfigured. We never remove channels that
 // came from the custom JSON.
 
-function applyTelegramEnvOverrides(tg, { webhookOnly = false } = {}) {
+function applyTelegramEnvOverrides(tg) {
   // strings
-  if (!webhookOnly && process.env.TELEGRAM_DM_POLICY)              tg.dmPolicy = process.env.TELEGRAM_DM_POLICY;
-  if (!webhookOnly && process.env.TELEGRAM_GROUP_POLICY)            tg.groupPolicy = process.env.TELEGRAM_GROUP_POLICY;
-  if (!webhookOnly && process.env.TELEGRAM_REPLY_TO_MODE)           tg.replyToMode = process.env.TELEGRAM_REPLY_TO_MODE;
-  if (!webhookOnly && process.env.TELEGRAM_CHUNK_MODE)              tg.chunkMode = process.env.TELEGRAM_CHUNK_MODE;
-  if (!webhookOnly && process.env.TELEGRAM_STREAM_MODE)             tg.streamMode = process.env.TELEGRAM_STREAM_MODE;
-  if (!webhookOnly && process.env.TELEGRAM_REACTION_NOTIFICATIONS)  tg.reactionNotifications = process.env.TELEGRAM_REACTION_NOTIFICATIONS;
-  if (!webhookOnly && process.env.TELEGRAM_REACTION_LEVEL)          tg.reactionLevel = process.env.TELEGRAM_REACTION_LEVEL;
-  if (!webhookOnly && process.env.TELEGRAM_PROXY)                   tg.proxy = process.env.TELEGRAM_PROXY;
-  if (process.env.TELEGRAM_WEBHOOK_URL)                             tg.webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
-  if (process.env.TELEGRAM_WEBHOOK_SECRET)                          tg.webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (process.env.TELEGRAM_WEBHOOK_PATH)                            tg.webhookPath = process.env.TELEGRAM_WEBHOOK_PATH;
-  if (!webhookOnly && process.env.TELEGRAM_MESSAGE_PREFIX)          tg.messagePrefix = process.env.TELEGRAM_MESSAGE_PREFIX;
-
-  if (webhookOnly) return;
+  if (process.env.TELEGRAM_DM_POLICY)              tg.dmPolicy = process.env.TELEGRAM_DM_POLICY;
+  if (process.env.TELEGRAM_GROUP_POLICY)            tg.groupPolicy = process.env.TELEGRAM_GROUP_POLICY;
+  if (process.env.TELEGRAM_REPLY_TO_MODE)           tg.replyToMode = process.env.TELEGRAM_REPLY_TO_MODE;
+  if (process.env.TELEGRAM_CHUNK_MODE)              tg.chunkMode = process.env.TELEGRAM_CHUNK_MODE;
+  if (process.env.TELEGRAM_STREAM_MODE)             tg.streamMode = process.env.TELEGRAM_STREAM_MODE;
+  if (process.env.TELEGRAM_REACTION_NOTIFICATIONS)  tg.reactionNotifications = process.env.TELEGRAM_REACTION_NOTIFICATIONS;
+  if (process.env.TELEGRAM_REACTION_LEVEL)          tg.reactionLevel = process.env.TELEGRAM_REACTION_LEVEL;
+  if (process.env.TELEGRAM_PROXY)                   tg.proxy = process.env.TELEGRAM_PROXY;
+  if (process.env.TELEGRAM_WEBHOOK_URL)             tg.webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
+  if (process.env.TELEGRAM_WEBHOOK_SECRET)          tg.webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (process.env.TELEGRAM_WEBHOOK_PATH)            tg.webhookPath = process.env.TELEGRAM_WEBHOOK_PATH;
+  if (process.env.TELEGRAM_MESSAGE_PREFIX)          tg.messagePrefix = process.env.TELEGRAM_MESSAGE_PREFIX;
 
   // booleans
   if (process.env.TELEGRAM_LINK_PREVIEW)            tg.linkPreview = process.env.TELEGRAM_LINK_PREVIEW !== "false";
@@ -443,9 +441,6 @@ if (process.env.TELEGRAM_BOT_TOKEN) {
   applyTelegramEnvOverrides(tg);
 } else if (config.channels?.telegram) {
   console.log("[configure] Telegram channel configured (from custom JSON)");
-  // Allow webhook env vars to overlay an existing Telegram config even when
-  // bot tokens live in custom JSON or persisted account config.
-  applyTelegramEnvOverrides(config.channels.telegram, { webhookOnly: true });
 }
 
 if (process.env.DISCORD_BOT_TOKEN) {
