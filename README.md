@@ -338,14 +338,14 @@ If your webhook source cannot send custom headers:
 
 | Variable | Default | Description |
 |---|---|---|
-| `BROWSER_CDP_URL` | | Remote CDP URL pointing to a browser sidecar (e.g. `http://browser:9222`). Required to activate browser tool. |
+| `BROWSER_CDP_URL` | | Remote CDP URL pointing to the sidecar's CDP proxy (for this stack: `http://browser:9223`). Required to activate browser tool. |
 | `BROWSER_EVALUATE_ENABLED` | `false` | Allow JavaScript evaluation in page context via browser actions. |
 | `BROWSER_SNAPSHOT_MODE` | | Default snapshot mode (e.g. `efficient`). |
 | `BROWSER_REMOTE_TIMEOUT_MS` | `1500` | HTTP timeout in ms for remote CDP connection. |
 | `BROWSER_REMOTE_HANDSHAKE_TIMEOUT_MS` | `3000` | WebSocket handshake timeout in ms for remote CDP. |
 | `BROWSER_DEFAULT_PROFILE` | | Override the default browser profile name. |
 
-Requires a separate browser container connected via Docker networking. Recommended: `kasmweb/chrome` (full Chrome desktop via noVNC on `:6901`, CDP on `:9222`). Docs: https://docs.openclaw.ai/tools/browser
+This repo uses `coollabsio/openclaw-browser:latest`, which exposes an nginx CDP proxy on `:9223` and forwards internally to Chromium on `:9222`. OpenClaw should talk to `9223`, not `9222`. Docs: https://docs.openclaw.ai/tools/browser
 
 #### Browser login (VNC sidecar)
 
@@ -354,9 +354,27 @@ For sites requiring authentication, use `kasmweb/chrome` so you can log in manua
 1. Open `https://<host>:6901` — full Chrome desktop via noVNC
 2. Navigate to the target site, log in manually (handles captchas, 2FA, OAuth)
 3. Sessions persist in a mounted volume across restarts
-4. Set `BROWSER_CDP_URL=http://browser:9222` — openclaw connects via CDP
+4. Set `BROWSER_CDP_URL=http://browser:9223` — OpenClaw connects through the sidecar's CDP proxy
 
 Mount a persistent volume at the sidecar's profile directory (`/home/kasm-user`) so cookies and sessions survive container restarts. The sidecar may need `CHROME_ARGS=--remote-debugging-port=9222 --remote-debugging-address=0.0.0.0` to expose CDP. Docs: https://docs.openclaw.ai/tools/browser-login
+
+#### Coolify self-heal for wedged CDP
+
+If the browser sidecar becomes `unhealthy`, restarting only the OpenClaw gateway is not enough. The common failure mode is that Chromium inside the `browser` container stops responding on `127.0.0.1:9222`, while nginx on `:9223` stays up and keeps timing out.
+
+Recommended Coolify scheduled task:
+
+- Name: `Recycle browser sidecar if CDP wedges`
+- Container: `browser`
+- Frequency: `*/10 * * * *`
+- Timeout: `120`
+- Command:
+
+```sh
+sh -lc 'pid="$(pgrep -o chromium || true)"; fd=0; [ -n "$pid" ] && fd="$(ls "/proc/$pid/fd" 2>/dev/null | wc -l | tr -d " ")"; stuck="$(ps -eo args | grep "[c]url .*127.0.0.1:9223/json/version" | wc -l | tr -d " ")"; if ! curl -fsS --connect-timeout 1 --max-time 3 http://127.0.0.1:9223/json/version >/dev/null || [ "${fd:-0}" -ge 7000 ] || [ "${stuck:-0}" -ge 8 ]; then echo "recycling browser: fd=$fd stuck=$stuck"; kill -TERM 1; else echo "browser ok: fd=$fd stuck=$stuck"; fi'
+```
+
+This is intentionally conditional. It recycles the sidecar only when CDP is already failing or Chromium is approaching FD saturation, instead of killing the browser at a fixed time every night.
 
 ### Camofox Browser (Camoufox anti-detection sidecar + OpenClaw plugin, optional)
 

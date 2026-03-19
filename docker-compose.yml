@@ -77,15 +77,22 @@ services:
     pull_policy: always
     # No port exposure needed — proxied via openclaw at /browser/
     healthcheck:
-      # Chrome DevTools proxy (nginx) is exposed on 9223 in this image.
+      # Probe the nginx CDP proxy directly and bound curl itself so failed
+      # checks do not accumulate orphaned curl processes inside the container.
       test:
         [
-          "CMD-SHELL",
-          'curl -fsS "http://127.0.0.1:9223/json/version" >/dev/null',
+          "CMD",
+          "curl",
+          "-fsS",
+          "--connect-timeout",
+          "1",
+          "--max-time",
+          "2",
+          "http://127.0.0.1:9223/json/version",
         ]
-      interval: 10s
-      timeout: 3s
-      retries: 12
+      interval: 30s
+      timeout: 5s
+      retries: 3
     environment:
       - PUID=1000
       - PGID=1000
@@ -94,6 +101,10 @@ services:
     volumes:
       - browser-data:/config
     shm_size: 2g
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     mem_limit: 5g
     mem_reservation: 1536m
     restart: unless-stopped
