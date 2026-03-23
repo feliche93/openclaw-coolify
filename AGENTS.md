@@ -81,6 +81,19 @@ Docs: https://docs.openclaw.ai/tools/browser
 
 `channels.<name>.groups` (or `guilds` for Discord) is **never** exposed as an env var, for any channel. Group/guild allowlists with per-group mention gating are too complex for flat env vars. When adding a new channel, keep `groups`/`guilds` in `my-openclaw.json` only.
 
+### Telegram topic routing policy (multi-agent groups)
+
+Default policy for Telegram forum groups:
+
+- The general thread/root chat is **mention-only**. No agent should answer there unless that specific bot is tagged.
+- Each dedicated topic should have **exactly one owning agent**. In that topic, no mention is required.
+- Do not leave a non-owning account with broad group access such as `requireMention: false` at the group level with an empty `topics` map. That causes multiple agents to answer in the same topic.
+- Keep the global topic map and per-account topic maps in sync:
+  - `channels.telegram.groups.<groupId>.topics.<topicId>.agentId` defines the owner.
+  - `channels.telegram.accounts.<accountId>.groups.<groupId>.topics` should only include topics owned by that account.
+- For reliable routing in the general thread, set `agents.list[].groupChat.mentionPatterns` to the actual Telegram bot usernames (for example `@felixsclawdbot`).
+- When moving topic ownership from one agent to another, update both the global group topic map and the per-account group config together.
+
 WhatsApp example:
 
 ```json
