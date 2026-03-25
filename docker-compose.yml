@@ -68,7 +68,10 @@ services:
     depends_on:
       - browser
       - camofox
-    mem_limit: 5g
+    # Local Whisper `turbo` on CPU is memory-hungry; leave room for the
+    # gateway and other in-container processes to avoid cgroup OOM kills.
+    mem_limit: 12g
+    memswap_limit: 24g
     mem_reservation: 1536m
     restart: unless-stopped
 

@@ -1,0 +1,4 @@
+sed: 2: "1,40p
+printf "DOCTOR\n" ...": extra characters at the end of p commandsed: 2: "1,40p
+printf "DOCTOR\n" ...": extra characters at the end of p command
+
