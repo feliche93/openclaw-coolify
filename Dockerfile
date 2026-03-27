@@ -160,7 +160,8 @@ RUN set -eux; \
   gh --version | head -n1
 
 # Infisical CLI (used for runtime secret injection via INFISICAL_TOKEN)
-# Note: intentionally unpinned so each image build installs the latest release.
+# Defaults to the newest release that ships the expected Linux archive.
+ARG INFISICAL_VERSION=latest
 RUN set -eux; \
   arch="$(uname -m)"; \
   case "$arch" in \
@@ -168,7 +169,10 @@ RUN set -eux; \
     aarch64|arm64) go_arch="arm64" ;; \
     *) echo "Unsupported architecture for infisical: $arch" >&2; exit 1 ;; \
   esac; \
-  version="$(node -e 'fetch("https://api.github.com/repos/Infisical/cli/releases/latest",{headers:{"User-Agent":"openclaw-coolify"}}).then(r=>r.json()).then(j=>process.stdout.write(String(j.tag_name||"").replace(/^v/,""))).catch(e=>{console.error(e);process.exit(1);})')"; \
+  version="${INFISICAL_VERSION}"; \
+  if [ "${version}" = "latest" ]; then \
+    version="$(GO_ARCH="$go_arch" node -e 'const goArch = process.env.GO_ARCH; const expectedAsset = (version) => `cli_${version}_linux_${goArch}.tar.gz`; fetch("https://api.github.com/repos/Infisical/cli/releases?per_page=30", { headers: { "User-Agent": "openclaw-coolify" } }).then(async (r) => { if (!r.ok) { throw new Error(`GitHub API returned ${r.status}`); } return r.json(); }).then((releases) => { if (!Array.isArray(releases)) { throw new Error("Unexpected GitHub releases response"); } for (const release of releases) { if (!release || release.draft || release.prerelease) continue; const version = String(release.tag_name || "").replace(/^v/, ""); const assets = Array.isArray(release.assets) ? release.assets : []; if (version && assets.some((asset) => asset?.name === expectedAsset(version))) { process.stdout.write(version); return; } } throw new Error(`No Infisical release found with asset ${expectedAsset("<version>")}`); }).catch((e) => { console.error(e); process.exit(1); });')"; \
+  fi; \
   if [ -z "$version" ]; then echo "Failed to resolve latest Infisical CLI version" >&2; exit 1; fi; \
   url="https://github.com/Infisical/cli/releases/download/v${version}/cli_${version}_linux_${go_arch}.tar.gz"; \
   curl -fsSL "$url" -o /tmp/infisical.tgz; \
