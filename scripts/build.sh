@@ -18,12 +18,14 @@ FINAL_TAG="openclaw:local"
 CUSTOM_TAG="openclaw:local"
 BROWSER_TAG="openclaw-browser:local"
 AGENT_BROWSER_VERSION="${AGENT_BROWSER_VERSION:-latest}"
+FIRECRAWL_CLI_VERSION="${FIRECRAWL_CLI_VERSION:-latest}"
+DSPY_VERSION="${DSPY_VERSION:-latest}"
 SUMMARIZE_VERSION="${SUMMARIZE_VERSION:-latest}"
 TARGET="${1:-all}"
 
 resolve_latest_release() {
   curl -fsSL https://api.github.com/repos/openclaw/openclaw/releases/latest \
-    | node -e 'let s=\"\";process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{const j=JSON.parse(s);const t=String(j.tag_name||\"\").replace(/^v/,\"\");if(!t){process.exit(2);}process.stdout.write(t);});'
+    | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const t=String(j.tag_name||"").replace(/^v/,"");if(!t){process.exit(2);}process.stdout.write(t);});'
 }
 
 if [ "${OPENCLAW_GIT_REF}" = "latest-release" ]; then
@@ -48,6 +50,8 @@ build_final() {
     -f Dockerfile \
     --build-arg "OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF}" \
     --build-arg "AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION}" \
+    --build-arg "FIRECRAWL_CLI_VERSION=${FIRECRAWL_CLI_VERSION}" \
+    --build-arg "DSPY_VERSION=${DSPY_VERSION}" \
     --build-arg "SUMMARIZE_VERSION=${SUMMARIZE_VERSION}" \
     -t "${FINAL_TAG}" \
     .
@@ -60,6 +64,8 @@ build_custom() {
     -f Dockerfile \
     --build-arg "OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF}" \
     --build-arg "AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION}" \
+    --build-arg "FIRECRAWL_CLI_VERSION=${FIRECRAWL_CLI_VERSION}" \
+    --build-arg "DSPY_VERSION=${DSPY_VERSION}" \
     --build-arg "SUMMARIZE_VERSION=${SUMMARIZE_VERSION}" \
     -t "${CUSTOM_TAG}" \
     .

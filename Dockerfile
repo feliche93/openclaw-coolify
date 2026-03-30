@@ -223,6 +223,17 @@ RUN set -eux; \
   fi; \
   agent-browser >/dev/null
 
+# Provide the `firecrawl` CLI so the Firecrawl skill can be installed later
+# without rebuilding the image again just to satisfy the binary dependency.
+ARG FIRECRAWL_CLI_VERSION=latest
+RUN set -eux; \
+  if [ "${FIRECRAWL_CLI_VERSION}" = "latest" ]; then \
+    npm i -g firecrawl-cli; \
+  else \
+    npm i -g "firecrawl-cli@${FIRECRAWL_CLI_VERSION}"; \
+  fi; \
+  firecrawl --version
+
 # Provide the `summarize` CLI for link-to-summary workflows.
 ARG SUMMARIZE_VERSION=latest
 RUN set -eux; \
@@ -292,6 +303,21 @@ RUN python3 -m venv /opt/scrapling-venv \
   && ln -sf /opt/scrapling-venv/bin/scrapling /usr/local/bin/scrapling \
   && scrapling install \
   && scrapling --help >/dev/null
+
+# Provide the `dspy` Python framework for agentic workflows that import it.
+# Install into the default Python environment so future skills/scripts can use
+# plain `python3 -c 'import dspy'` without a dedicated wrapper.
+ARG DSPY_VERSION=latest
+RUN set -eux; \
+  if [ "${DSPY_VERSION}" = "latest" ]; then \
+    python3 -m pip install --no-cache-dir --prefer-binary --break-system-packages dspy; \
+  else \
+    python3 -m pip install --no-cache-dir --prefer-binary --break-system-packages "dspy==${DSPY_VERSION}"; \
+  fi; \
+  python3 - <<'PY'
+import dspy
+print(dspy.__version__)
+PY
 
 # Provide the `himalaya` CLI for the built-in email skill.
 # Note: intentionally unpinned so each image build installs the latest release.

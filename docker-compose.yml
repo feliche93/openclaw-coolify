@@ -8,6 +8,8 @@ services:
         - OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}
         - INFISICAL_VERSION=${INFISICAL_VERSION:-latest}
         - AGENT_BROWSER_VERSION=${AGENT_BROWSER_VERSION:-latest}
+        - FIRECRAWL_CLI_VERSION=${FIRECRAWL_CLI_VERSION:-latest}
+        - DSPY_VERSION=${DSPY_VERSION:-latest}
         - SUMMARIZE_VERSION=latest
     image: openclaw:latest
     ports:

@@ -62,7 +62,7 @@ Docker build strategy:
 .github/workflows/auto-update.yml   — cron every 6h, check openclaw releases, build+push
 .github/workflows/build.yml         — CI on push/PR (build only, no push)
 Dockerfile.base                     — multi-stage: build openclaw from source → slim runtime
-Dockerfile                          — self-contained image (builds OpenClaw from source + adds extra CLIs/tools, including global `agent-browser`, `summarize`, and `yt-dlp`)
+Dockerfile                          — self-contained image (builds OpenClaw from source + adds extra CLIs/tools, including global `agent-browser`, `firecrawl`, `summarize`, `yt-dlp`, and Python `dspy`)
 scripts/configure.js                — reads env vars, writes/patches openclaw.json
 scripts/entrypoint.sh               — container entrypoint: configure → nginx → gateway
 scripts/smoke.js                    — smoke test (openclaw --version)
@@ -75,10 +75,13 @@ The `openclaw` service in `docker-compose.yml` builds `Dockerfile` with:
 - `OPENCLAW_GIT_REF=${OPENCLAW_GIT_REF:-latest-release}` (build arg)
 - `INFISICAL_VERSION=latest` (build arg; defaults to the newest Infisical release that has Linux build assets, override with an exact version to pin)
 - `AGENT_BROWSER_VERSION=latest` (build arg; override with an exact version if you want to pin)
+- `FIRECRAWL_CLI_VERSION=latest` (build arg; override with an exact version to pin Firecrawl CLI)
+- `DSPY_VERSION=latest` (build arg; override with an exact version to pin DSPy)
 - `SUMMARIZE_VERSION=latest` (build arg)
 
-This installs `agent-browser`, `summarize`, and `yt-dlp` globally in the container so OpenClaw agents can call them directly. By default, `agent-browser` follows the npm `latest` tag at build time, but you can override the build arg with an exact version if you want reproducible pinning.
+This installs `agent-browser`, `firecrawl`, `summarize`, and `yt-dlp` globally in the container so OpenClaw agents can call them directly, and it installs the `dspy` Python package into the default `python3` environment for later DSPy-based workflows. By default, `agent-browser` and `firecrawl` follow the npm `latest` tag at build time, and DSPy follows the latest PyPI release, but you can override the build args with exact versions if you want reproducible pinning.
 It also vendors the `steipete/clawdis` `summarize` skill into the container's global OpenClaw skill directory, plus Codex for in-container coding-agent workflows.
+The Firecrawl skill itself is not vendored here; this image only preinstalls the `firecrawl` binary so you can add that skill later without another container rebuild.
 
 ### Runtime vs Workspace Git
 
@@ -235,6 +238,17 @@ The wrappers pass the runtime token via `INFISICAL_TOKEN` environment variable (
 | Variable | Description |
 |---|---|
 | `DEEPGRAM_API_KEY` | Deepgram API key. Enables audio transcription via Nova 3 model. |
+
+### Firecrawl CLI (optional)
+
+| Variable | Description |
+|---|---|
+| `FIRECRAWL_API_KEY` | Firecrawl API key for the bundled `firecrawl` CLI. |
+| `FIRECRAWL_API_URL` | Optional custom Firecrawl API base URL (for example a self-hosted/local Firecrawl instance). |
+
+### DSPy (optional)
+
+The image installs the `dspy` Python package into the default `python3` environment. DSPy itself does not need a dedicated repo env var here; it reuses your model-provider env vars such as `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or other LiteLLM-compatible provider vars you pass through.
 
 ### Amazon Bedrock (uses AWS credential chain)
 
