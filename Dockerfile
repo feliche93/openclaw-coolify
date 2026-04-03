@@ -37,35 +37,6 @@ RUN set -eux; \
   echo "Building OpenClaw from ref: ${ref}"; \
   git clone --depth 1 --branch "${ref}" https://github.com/openclaw/openclaw.git .
 
-# Temporary hotfix for openclaw/openclaw#55202 until a tagged release includes it.
-# Keep this idempotent so future upstream releases build unchanged.
-RUN set -eux; \
-  node - <<'NODE'
-const fs = require("fs");
-const path = "src/channels/plugins/registry-loader.ts";
-let src = fs.readFileSync(path, "utf8");
-
-const importNeedle = 'import { getActivePluginRegistry } from "../../plugins/runtime.js";';
-const importReplacement = 'import { getActivePluginChannelRegistry } from "../../plugins/runtime.js";';
-const callNeedle = "    const registry = getActivePluginRegistry();";
-const callReplacement = "    const registry = getActivePluginChannelRegistry();";
-
-if (src.includes(importReplacement) && src.includes(callReplacement)) {
-  console.log("[patch] outbound registry pin hotfix already present");
-  process.exit(0);
-}
-
-if (!src.includes(importNeedle) || !src.includes(callNeedle)) {
-  console.error("[patch] expected upstream registry-loader.ts shape not found");
-  process.exit(1);
-}
-
-src = src.replace(importNeedle, importReplacement);
-src = src.replace(callNeedle, callReplacement);
-fs.writeFileSync(path, src);
-console.log("[patch] applied outbound registry pin hotfix (openclaw/openclaw#55202)");
-NODE
-
 # Patch: relax version requirements for packages using workspace protocol.
 RUN set -eux; \
   find ./extensions -name 'package.json' -type f | while read -r f; do \

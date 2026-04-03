@@ -124,8 +124,6 @@ In Coolify, set `OPENCLAW_GIT_REF` as a build env var (`main`, `latest-release`,
 
 `Dockerfile` includes a `releases/latest` metadata marker layer so `latest-release` builds are less likely to get stuck on stale Docker cache.
 
-Current hotfix: this image also carries a temporary build-time patch for upstream `openclaw/openclaw#55202` so outbound channel delivery keeps using the pinned channel registry until that fix lands in a tagged OpenClaw release. The patch is idempotent and becomes a no-op once upstream includes it.
-
 ## auto-update.yml workflow
 
 ```
