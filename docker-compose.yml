@@ -50,7 +50,7 @@ services:
       - OPENCLAW_WORKSPACE_DIR=/data/workspace
       - HOME=/data
       # Browser sidecar
-      - BROWSER_CDP_URL=http://browser:9223
+      - BROWSER_CDP_URL=${BROWSER_CDP_URL:-http://browser:9223}
       - BROWSER_DEFAULT_PROFILE=openclaw
       - BROWSER_EVALUATE_ENABLED=true
       - BROWSER_REMOTE_TIMEOUT_MS=20000
@@ -113,6 +113,14 @@ services:
         hard: 65536
     mem_limit: 5g
     mem_reservation: 1536m
+    restart: unless-stopped
+
+  lightpanda:
+    image: lightpanda/browser:${LIGHTPANDA_IMAGE_TAG:-nightly}
+    pull_policy: always
+    # Internal-only: set BROWSER_CDP_URL=ws://lightpanda:9222 to use this sidecar.
+    environment:
+      - LIGHTPANDA_DISABLE_TELEMETRY=${LIGHTPANDA_DISABLE_TELEMETRY:-true}
     restart: unless-stopped
 
   camofox:

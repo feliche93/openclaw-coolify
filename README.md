@@ -22,7 +22,7 @@ docker run -d \
 
 ### Full Setup (docker-compose)
 
-Includes persistent storage, browser sidecar (CDP + VNC), and webhook hooks. See [`docker-compose.yml`](docker-compose.yml).
+Includes persistent storage, a default Chromium browser sidecar (CDP + VNC), an optional Lightpanda CDP sidecar, and webhook hooks. See [`docker-compose.yml`](docker-compose.yml).
 
 ```bash
 docker compose up -d
@@ -51,6 +51,11 @@ docker compose up -d
 │    3. exec openclaw gateway                 │
 └─────────────────────────────────────────────┘
 ```
+
+Compose sidecars:
+- `browser` — default Chromium CDP proxy + noVNC desktop
+- `lightpanda` — optional lightweight CDP sidecar (`ws://lightpanda:9222`)
+- `camofox` — optional anti-detection browser sidecar/plugin backend
 
 Docker build strategy:
 1. **Base image** (`Dockerfile.base`) — builds openclaw from source. Tagged `coollabsio/openclaw-base:<version>`.
@@ -359,8 +364,12 @@ If your webhook source cannot send custom headers:
 | `BROWSER_REMOTE_TIMEOUT_MS` | `1500` | HTTP timeout in ms for remote CDP connection. |
 | `BROWSER_REMOTE_HANDSHAKE_TIMEOUT_MS` | `3000` | WebSocket handshake timeout in ms for remote CDP. |
 | `BROWSER_DEFAULT_PROFILE` | | Override the default browser profile name. |
+| `LIGHTPANDA_IMAGE_TAG` | `nightly` | Docker tag for the optional `lightpanda` sidecar image. |
+| `LIGHTPANDA_DISABLE_TELEMETRY` | `true` | Passed to the Lightpanda sidecar when it is enabled. |
 
 This repo uses `coollabsio/openclaw-browser:latest`, which exposes an nginx CDP proxy on `:9223` and forwards internally to Chromium on `:9222`. OpenClaw should talk to `9223`, not `9222`. Docs: https://docs.openclaw.ai/tools/browser
+
+It also defines an optional `lightpanda` sidecar using the official `lightpanda/browser` image. To route OpenClaw through Lightpanda instead of the default Chromium sidecar, set `BROWSER_CDP_URL=ws://lightpanda:9222` in Coolify or your local `.env`. Lightpanda is a better fit for low-memory, read-heavy agent browsing; the Chromium sidecar remains the safer default for full browser compatibility and interactive login flows.
 
 #### Browser login (VNC sidecar)
 
